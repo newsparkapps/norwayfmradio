@@ -1,0 +1,127 @@
+[
+  {
+    "name":"Bitter Sweet Music NO",
+    "image":"http://cdn.onlineradiobox.com/img/l/7/80467.v12.png",
+    "stream":"http://bittersweetmusic.24-7.ro:8520/live.no"
+  },
+  {
+    "name":"Radio Norge",
+    "image":"https://cdn.onlineradiobox.com/img/l/8/44738.v3.png",
+    "stream":"https://live-bauerno.sharp-stream.com/radionorge_no_mp3"
+  },
+  {
+    "name":"Metal Express Radio",
+    "image":"https://cdn.onlineradiobox.com/img/l/5/16085.v4.png",
+    "stream":"https://s39.myradiostream.com/11590/listen.mp3"
+  },
+  {
+    "name":"Jæren Misjonsradio",
+    "image":"https://cdn.onlineradiobox.com/img/l/9/20309.v4.png",
+    "stream":"http://radioip.no:443/jm"
+  },
+  {
+    "name":"NRK P1 Oslo",
+    "image":"https://cdn.onlineradiobox.com/img/l/3/14333.v4.png",
+    "stream":"https://lyd.nrk.no/nrk_radio_p1_ostlandssendingen_mp3_m"
+  },
+  {
+    "name":"NRJ Norway",
+    "image":"https://cdn.onlineradiobox.com/img/l/4/15794.v9.png",
+    "stream":"https://nrj.p4groupaudio.com/NRJ_MM"
+  },
+  {
+    "name":"Tzgospel swahili",
+    "image":"https://cdn.onlineradiobox.com/img/l/4/111634.v5.png",
+    "stream":"https://stream.zeno.fm/kupu146archvv"
+  },
+  {
+    "name":"The Beat",
+    "image":"https://cdn.onlineradiobox.com/img/l/3/15793.v4.png",
+    "stream":"https://stream.oneplay.no/beatoslo128"
+  },
+  {
+    "name":"Radio Metro",
+    "image":"https://cdn.onlineradiobox.com/img/l/9/14299.v5.png",
+    "stream":"https://stream.oneplay.no/oslo128"
+  },
+  {
+    "name":"P4 Radio",
+    "image":"https://cdn.onlineradiobox.com/img/l/9/15799.v5.png",
+    "stream":"https://p4.p4groupaudio.com/P04_MH"
+  },
+  {
+    "name":"Dansbandradioen",
+    "image":"https://cdn.onlineradiobox.com/img/l/1/70351.v17.png",
+    "stream":"https://s3.radio.co/seed4786c7/listen"
+  },
+  {
+    "name":"P9 Retro",
+    "image":"https://cdn.onlineradiobox.com/img/l/1/15811.v6.png",
+    "stream":"https://p9.p4groupaudio.com/P09_MH"
+  },
+  {
+    "name":"P8 Pop",
+    "image":"https://cdn.onlineradiobox.com/img/l/9/15809.v3.png",
+    "stream":"https://p8.p4groupaudio.com/P08_MH"
+  },
+  {
+    "name":"P6 Rock",
+    "image":"https://cdn.onlineradiobox.com/img/l/4/15804.v5.png",
+    "stream":"https://p6.p4groupaudio.com/P06_MH"
+  },
+  {
+    "name":"Radio Tromso",
+    "image":"https://cdn.onlineradiobox.com/img/l/2/20262.v7.png",
+    "stream":"https://stream.radio3.no/radiotromso"
+  },
+  {
+    "name":"P5 Hits",
+    "image":"https://cdn.onlineradiobox.com/img/l/1/15801.v8.png",
+    "stream":"https://p5.p4groupaudio.com/P05_MH?"
+  },
+  {
+    "name":"Radio Kos",
+    "image":"https://cdn.onlineradiobox.com/img/l/6/67386.v10.png",
+    "stream":"https://lyd.radiokos.no/kos_hq"
+  },
+  {
+    "name":"1FM",
+    "image":"https://cdn.onlineradiobox.com/img/l/5/15795.v4.png",
+    "stream":"https://s2.radio.co/s914ffa700/listen"
+  },
+  {
+    "name":"Radio ROX",
+    "image":"https://cdn.onlineradiobox.com/img/l/7/20347.v6.png",
+    "stream":"https://stream.oneplay.no/rox128"
+  },
+  {
+    "name":"Radio Northern Star",
+    "image":"https://cdn.onlineradiobox.com/img/l/5/67185.v6.png",
+    "stream":"http://6471.cloudrad.io:8178/theferry.mp3"
+  },
+  {
+    "name":"P10 Country",
+    "image":"https://cdn.onlineradiobox.com/img/l/5/15955.v5.png",
+    "stream":"https://p10.p4groupaudio.com/P10_MM"
+  },
+  {
+    "name":"P7 Klem",
+    "image":"https://cdn.onlineradiobox.com/img/l/7/15807.v3.png",
+    "stream":"https://p7.p4groupaudio.com/P07_MH"
+  },
+  {
+    "name":"ScanSat",
+    "image":"https://cdn.onlineradiobox.com/img/l/6/14326.v6.png",
+    "stream":"https://stream.scansat.no/scansat_hq"
+  },
+  {
+    "name":"KISS Norge",
+    "image":"https://cdn.onlineradiobox.com/img/l/9/89189.v4.png",
+    "stream":"https://live-bauerno.sharp-stream.com/kiss_no_mp3"
+  },
+  {
+    "name":"P11 Bandit",
+    "image":"https://cdn.onlineradiobox.com/img/l/4/15954.v4.png",
+    "stream":"https://p11.p4groupaudio.com/P11_MH"
+  }
+]

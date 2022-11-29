@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Norway FM Radio</string>
+
+    <string name="rateusquote">Your support helps to make more features in radio app.Write your valuable review !!</string>
+    <string name="live_broadcast">Start Norway FM Radio</string>
+    <string name="no_stream">Stream not available</string>
+
+    <string name="banneradid">ca-app-pub-4257458430524860/4171058920</string>
+    <string name="interstitialadid">ca-app-pub-4257458430524860/6605650573</string>
+    <string name="nativeadid">ca-app-pub-4257458430524860/4088402093</string>
+
+    <!--Test Ads-->
+    <!--<string name="banneradid">ca-app-pub-3940256099942544/6300978111</string>
+    <string name="interstitialadid">ca-app-pub-3940256099942544/1033173712</string>
+    <string name="nativeadid">ca-app-pub-3940256099942544/1044960115</string>-->
+</resources>

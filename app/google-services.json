@@ -1,0 +1,98 @@
+{
+  "project_info": {
+    "project_number": "709942945750",
+    "firebase_url": "https://bollywood-songs-c2f39.firebaseio.com",
+    "project_id": "bollywood-songs-c2f39",
+    "storage_bucket": "bollywood-songs-c2f39.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:709942945750:android:bea6f45c6ef7d02ec0a677",
+        "android_client_info": {
+          "package_name": "com.newsparkapps.bollywoodradio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "709942945750-gt2nvp1go8nc197h5jutd9p087hm9voj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZAML_ekeoeSdO33afDBVL_C6f-K-mo8g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "709942945750-gt2nvp1go8nc197h5jutd9p087hm9voj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:709942945750:android:31fc7ac9f9dd4d41c0a677",
+        "android_client_info": {
+          "package_name": "com.newsparkapps.malayasiafmradio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "709942945750-gt2nvp1go8nc197h5jutd9p087hm9voj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZAML_ekeoeSdO33afDBVL_C6f-K-mo8g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "709942945750-gt2nvp1go8nc197h5jutd9p087hm9voj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:709942945750:android:147bbda897d13125c0a677",
+        "android_client_info": {
+          "package_name": "com.newsparkapps.norwayfmradio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "709942945750-gt2nvp1go8nc197h5jutd9p087hm9voj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZAML_ekeoeSdO33afDBVL_C6f-K-mo8g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "709942945750-gt2nvp1go8nc197h5jutd9p087hm9voj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

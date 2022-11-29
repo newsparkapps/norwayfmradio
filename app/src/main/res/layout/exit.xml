@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:id="@+id/headerads"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:id="@+id/fl_adplaceholder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="60dp" />
+
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/header"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:src="@drawable/norwayradio_small"
+        android:layout_below="@+id/headerads"
+        android:layout_centerHorizontal="true"   />
+
+
+    <TextView
+        android:id="@+id/rateus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/header"
+        android:layout_centerHorizontal="true"
+        android:layout_gravity="center_horizontal"
+        android:layout_margin="10dp"
+        android:gravity="center_horizontal"
+        android:text="@string/rateusquote"
+        android:textColor="#212121"
+        android:textSize="18sp" />
+
+<LinearLayout
+    android:id="@+id/buttons"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:layout_below="@+id/rateus"
+    android:orientation="horizontal">
+
+
+    <Button
+        android:id="@+id/rateusbutton"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="15dp"
+        android:background="#009c04"
+        android:gravity="center_horizontal|center_vertical|center"
+        android:text="Write Now"
+        android:textAllCaps="false"
+        android:layout_weight="1"
+        android:textColor="#fff"
+        android:textSize="18sp" />
+
+    <Button
+        android:id="@+id/exit"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/rateme"
+        android:layout_centerHorizontal="true"
+        android:layout_margin="15dp"
+        android:background="#ff0000"
+        android:gravity="center_horizontal|center_vertical|center"
+        android:text="Exit"
+        android:layout_weight="1"
+        android:textAllCaps="false"
+        android:textColor="#fff"
+        android:textSize="18sp" />
+
+</LinearLayout>
+
+</RelativeLayout>

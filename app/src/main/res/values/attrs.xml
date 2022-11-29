@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="Croller">
+        <attr name="progress" format="integer" />
+        <attr name="label" format="string" />
+        <attr name="back_circle_color" format="color" />
+        <attr name="main_circle_color" format="color" />
+        <attr name="indicator_color" format="color" />
+        <attr name="progress_primary_color" format="color" />
+        <attr name="progress_secondary_color" format="color" />
+        <attr name="label_size" format="integer" />
+        <attr name="label_color" format="color" />
+        <attr name="indicator_width" format="float" />
+        <attr name="is_continuous" format="boolean" />
+        <attr name="progress_primary_circle_size" format="float" />
+        <attr name="progress_secondary_circle_size" format="float" />
+        <attr name="progress_primary_stroke_width" format="float" />
+        <attr name="progress_secondary_stroke_width" format="float" />
+        <attr name="sweep_angle" format="integer" />
+        <attr name="start_offset" format="integer" />
+        <attr name="max" format="integer" />
+        <attr name="main_circle_radius" format="float" />
+        <attr name="back_circle_radius" format="float" />
+        <attr name="progress_radius" format="float" />
+    </declare-styleable>
+
+
+    <declare-styleable name="ScrimInsetsView">
+        <attr name="insetForeground_ui" format="reference|color" />
+    </declare-styleable>
+    <declare-styleable name="SwipeRefreshLayout">
+        <attr name="direction">
+            <enum name="top" value="0" />
+            <enum name="bottom" value="1" />
+            <enum name="both" value="2" />
+        </attr>
+    </declare-styleable>
+    <declare-styleable name="PagerSlidingTabStrip">
+        <attr name="pstsIndicatorColor" format="color" />
+        <attr name="pstsUnderlineColor" format="color" />
+        <attr name="pstsDividerColor" format="color" />
+        <attr name="pstsDividerWidth" format="dimension" />
+        <attr name="pstsIndicatorHeight" format="dimension" />
+        <attr name="pstsUnderlineHeight" format="dimension" />
+        <attr name="pstsDividerPadding" format="dimension" />
+        <attr name="pstsTabPaddingLeftRight" format="dimension" />
+        <attr name="pstsScrollOffset" format="dimension" />
+        <attr name="pstsTabBackground" format="reference" />
+        <attr name="pstsShouldExpand" format="boolean" />
+        <attr name="pstsTextAllCaps" format="boolean" />
+        <attr name="pstsPaddingMiddle" format="boolean" />
+        <attr name="pstsTextStyle">
+            <flag name="normal" value="0x0" />
+            <flag name="bold" value="0x1" />
+            <flag name="italic" value="0x2" />
+        </attr>
+        <attr name="pstsTextSelectedStyle">
+            <flag name="normal" value="0x0" />
+            <flag name="bold" value="0x1" />
+            <flag name="italic" value="0x2" />
+        </attr>
+        <attr name="pstsTextAlpha" format="float" />
+        <attr name="pstsTextSelectedAlpha" format="float" />
+    </declare-styleable>
+
+    <!-- SlidingUpPanelLayout -->
+    <declare-styleable name="SlidingUpPanelLayout">
+        <attr name="umanoPanelHeight" format="dimension" />
+        <attr name="umanoShadowHeight" format="dimension" />
+        <attr name="umanoParalaxOffset" format="dimension" />
+        <attr name="umanoFadeColor" format="color" />
+        <attr name="umanoFlingVelocity" format="integer" />
+        <attr name="umanoDragView" format="reference" />
+        <attr name="umanoOverlay" format="boolean" />
+        <attr name="umanoClipPanel" format="boolean" />
+        <attr name="umanoAnchorPoint" format="float" />
+        <attr name="umanoInitialState" format="enum">
+            <enum name="expanded" value="0" />
+            <enum name="collapsed" value="1" />
+            <enum name="anchored" value="2" />
+            <enum name="hidden" value="3" />
+        </attr>
+    </declare-styleable>
+
+    <!-- CircleImageView -->
+    <declare-styleable name="CircleImageView">
+        <attr name="border" format="boolean" />
+        <attr name="border_width" format="dimension" />
+        <attr name="border_color" format="color" />
+        <attr name="shadow" format="boolean" />
+        <attr name="shadow_color" format="color" />
+        <attr name="shadow_radius" format="float" />
+    </declare-styleable>
+
+    <!-- Custom SeekBar -->
+    <declare-styleable name="CustomAttributes">
+
+        <!-- in progress view indicate max value of progress -->
+        <attr name="maxx" format="integer" />
+        <!-- in progress view indicate min value of progress -->
+        <attr name="min" format="integer" />
+    </declare-styleable>
+
+    <!-- PlayPause -->
+    <declare-styleable name="PlayPause">
+        <attr name="isCircleDraw" format="boolean" />
+    </declare-styleable>
+
+
+</resources>
