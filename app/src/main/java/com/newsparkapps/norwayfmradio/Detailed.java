@@ -252,7 +252,7 @@ public class Detailed extends AppCompatActivity {
     }
 
     private void checkStatus() {
-        String showAds = firebaseRemoteConfig.getString("new6BollywoodShowAds");
+        String showAds = firebaseRemoteConfig.getString("norwayShowAds");
         if (showAds.equals("true")) {
             loadExitInterstitials();
         }

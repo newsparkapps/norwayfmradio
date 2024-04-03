@@ -411,7 +411,7 @@ public class MyPlayers extends AppCompatActivity {
     }
 
     private void checkStatus() {
-        String showAds = firebaseRemoteConfig.getString("new6BollywoodShowAds");
+        String showAds = firebaseRemoteConfig.getString("norwayShowAds");
         if (showAds.equals("true")) {
             callNativeAds();
             AdRequest adRequest = new AdRequest.Builder().build();

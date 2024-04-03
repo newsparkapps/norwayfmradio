@@ -5,13 +5,27 @@ plugins {
 }
 
 android {
-    compileSdkVersion 32
+    signingConfigs {
+        debug {
+            storeFile file('D:\\iTechniqz\\Newsparkapps\\Keystore\\newsparkapps.jks')
+            storePassword 'newsparkapps'
+            keyAlias 'newsparkapps'
+            keyPassword 'newsparkapps'
+        }
+        release {
+            storeFile file('D:\\iTechniqz\\Newsparkapps\\Keystore\\newsparkapps.jks')
+            storePassword 'newsparkapps'
+            keyAlias 'newsparkapps'
+            keyPassword 'newsparkapps'
+        }
+    }
+    compileSdkVersion 33
     defaultConfig {
         applicationId "com.newsparkapps.norwayfmradio"
         minSdkVersion 19
-        targetSdkVersion 32
-        versionCode 3
-        versionName "2.0"
+        targetSdkVersion 33
+        versionCode 5
+        versionName "3.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
         vectorDrawables.useSupportLibrary = true
@@ -45,7 +59,7 @@ dependencies {
     implementation 'com.nostra13.universalimageloader:universal-image-loader:1.9.5'
     implementation 'org.greenrobot:eventbus:3.0.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'com.google.android.gms:play-services-ads:21.3.0'
+    implementation 'com.google.android.gms:play-services-ads:22.6.0'
     implementation 'com.google.firebase:firebase-crashlytics:18.3.2'
     implementation 'com.google.firebase:firebase-core:21.1.1'
     implementation 'dyanamitechetan.vusikview:vusikview:1.1'
