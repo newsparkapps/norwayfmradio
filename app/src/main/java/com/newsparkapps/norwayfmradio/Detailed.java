@@ -1,28 +1,30 @@
 package com.newsparkapps.norwayfmradio;
 
+
+import static com.newsparkapps.norwayfmradio.FmConstants.FM_JSON_URL;
+
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Rect;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.DefaultItemAnimator;
@@ -31,33 +33,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.NetworkImageView;
-
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.google.android.gms.ads.AdError;
-import com.google.android.gms.ads.AdListener;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdSize;
+import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.FullScreenContentCallback;
-import com.google.android.gms.ads.LoadAdError;
-import com.google.android.gms.ads.MobileAds;
-import com.google.android.gms.ads.initialization.InitializationStatus;
-import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
-import com.google.android.gms.ads.interstitial.InterstitialAd;
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
-import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 import com.newsparkapps.norwayfmradio.util.Shoutcast;
 import com.newsparkapps.norwayfmradio.util.ShoutcastHelper;
-import com.synnapps.carouselview.CarouselView;
-import com.synnapps.carouselview.ImageListener;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -69,242 +52,115 @@ import java.util.ArrayList;
 
 public class Detailed extends AppCompatActivity {
 
-    private final String TAG = Detailed.class.getSimpleName();
-    private static RecyclerView radiorecyclerView;
-    private RecyclerView.LayoutManager radiorecyclerViewManager;
-    CustomAdapter adapterMusic;
-    CarouselView carouselView;
+    private static final int PERMISSION_REQUEST_CODE = 121;
+    static RecyclerView radiorecyclerView;
+    RecyclerView.LayoutManager radiorecyclerViewManager;
+    CustomAdapter adapterMusic; 
+    private ArrayList<Shoutcast> fmlist;
     LinearLayout subPlayer;
     RadioManager radioManager;
-    public String FM_JSON_URL;
+    LinearLayout splash;
     ImageButton trigger;
     LinearLayout favoriteslayout;
     DatabaseHandler db;
-    LinearLayout splash;
-    boolean paused = false;
-    private FrameLayout adContainerView;
-    AdView adView;
     TextView subplayername,favoritesall;
-    ProgressBar progressBar;
-    InterstitialAd mInterstitialAd,exitmInterstitialAd;
-    private ArrayList<Shoutcast> fmlist;
+    ShimmerFrameLayout shimmerFrameLayout;
     NetworkImageView subplayerimage;
-    FirebaseRemoteConfig firebaseRemoteConfig;
-    int[] sampleImages = {R.drawable.aa};
+    public static String TAG = "Detailed";
     ImageLoader imageLoader = MyApplication.getInstance().getImageLoader();
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.detailed);
-        setContentView(R.layout.detailed);
 
         FmConstants.MyClass = "Detailed";
-        fmlist = new ArrayList<>();
-
-        getFMLive();
-
-
         splash = findViewById(R.id.splash);
         splash.setVisibility(View.VISIBLE);
 
+        if (Build.VERSION.SDK_INT > 32) {
+            if (!shouldShowRequestPermissionRationale("112")) {
+                getNotificationPermission();
+            }
+        }
+        shimmerFrameLayout = findViewById(R.id.shimmerFrameLayout);
+        shimmerFrameLayout.startShimmerAnimation();
 
-        carouselView = (CarouselView) findViewById(R.id.carouselView);
-        progressBar = findViewById(R.id.progressBar);
-        carouselView.setPageCount(sampleImages.length);
-        Intent a =getIntent();
-        String language = a.getStringExtra("language");
+        FrameLayout adContainer = findViewById(R.id.ad_view_container);
+        AdView adView = AdmobUtils.createAdView(this);
+        adContainer.addView(adView);
+        AdmobUtils.loadBannerAd(this, adView);
 
         radioManager = RadioManager.with(getApplicationContext());
 
         if (imageLoader == null)
             imageLoader = MyApplication.getInstance().getImageLoader();
-
-        adContainerView = findViewById(R.id.ad_view_container);
-        adView = new AdView(this);
-        adView.setAdUnitId(getResources().getString(R.string.banneradid));
-        adContainerView.addView(adView);
-        loadBanner();
-
-        firebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
-        firebaseRemoteConfig.setDefaultsAsync(R.xml.remote_config_defaults);
-        firebaseRemoteConfig.setConfigSettingsAsync(
-                new FirebaseRemoteConfigSettings.Builder().build());
-
-        firebaseRemoteConfig.fetch(10).addOnCompleteListener(new OnCompleteListener<Void>() {
-            @Override
-            public void onComplete(@NonNull Task<Void> task) {
-                if (task.isSuccessful()) {
-                    // Once the config is successfully fetched it must be activated before newly fetched values are returned.
-                    firebaseRemoteConfig.activate();
-                    checkStatus();
-                } else {
-                }
-            }
-        });
-
-        AdRequest adRequest = new AdRequest.Builder().build();
-        InterstitialAd.load(this,getResources().getString(R.string.interstitialadid), adRequest, new InterstitialAdLoadCallback() {
-            @Override
-            public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
-                // The mInterstitialAd reference will be null until
-                // an ad is loaded.
-                mInterstitialAd = interstitialAd;
-                mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback(){
-                    @Override
-                    public void onAdDismissedFullScreenContent() {
-                        // Called when fullscreen content is dismissed.
-                        Log.d("TAG", "The ad was dismissed.");
-                        Intent a = new Intent(getApplicationContext(), Exit.class);
-                        startActivity(a);
-                    }
-
-                    @Override
-                    public void onAdFailedToShowFullScreenContent(AdError adError) {
-                        // Called when fullscreen content failed to show.
-                        Log.d("TAG", "The ad failed to show.");
-                    }
-
-                    @Override
-                    public void onAdShowedFullScreenContent() {
-                        // Called when fullscreen content is shown.
-                        // Make sure to set your reference to null so you don't
-                        // show it a second time.
-                        mInterstitialAd = null;
-                        Log.d("TAG", "The ad was shown.");
-                    }
-                });
-            }
-
-            @Override
-            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-                // Handle the error
-                mInterstitialAd = null;
-            }
-        });
-
-
-
-        ImageListener imageListener = new ImageListener() {
-            @Override
-            public void setImageForPosition(int position, ImageView imageView) {
-                imageView.setImageResource(sampleImages[position]);
-            }
-        };
-        carouselView.setImageListener(imageListener);
-        favoriteslayout =(LinearLayout) findViewById(R.id.favoriteslayout);
-        favoritesall =(TextView) findViewById(R.id.favoritesall);
-        subplayername = (TextView) findViewById(R.id.subplayername);
-        subplayerimage = (NetworkImageView) findViewById(R.id.subplayerimage);
-        subPlayer = (LinearLayout) findViewById(R.id.sub_player);
-        radiorecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        
+        favoriteslayout = findViewById(R.id.favoriteslayout);
+        favoritesall = findViewById(R.id.favoritesall);
+        subplayername =  findViewById(R.id.subplayername);
+        subplayerimage =  findViewById(R.id.subplayerimage);
+        subPlayer =  findViewById(R.id.sub_player);
+        radiorecyclerView =  findViewById(R.id.recycler_view);
         radiorecyclerView.setHasFixedSize(true);
         radiorecyclerView.setItemAnimator(new DefaultItemAnimator());
         radiorecyclerView.getRecycledViewPool().setMaxRecycledViews(0, 0);
 
+        db = new DatabaseHandler(getApplicationContext());
+        int count = db.getMessagesCount();
+        if (count == 0) {
+            favoriteslayout.setVisibility(View.GONE);
+        } else {
+            favoriteslayout.setVisibility(View.VISIBLE);
+        }
 
-        favoritesall.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent a = new Intent(getApplicationContext(), Detailed.class);
-                a.putExtra("language","favorites");
-                startActivity(a);
-            }
+        favoritesall.setOnClickListener(view -> {
+            Intent a1 = new Intent(getApplicationContext(), Detailed.class);
+            a1.putExtra("language","favorites");
+            startActivity(a1);
+            finish();
         });
 
-        subPlayer = (LinearLayout) findViewById(R.id.sub_player);
-        trigger = (ImageButton) findViewById(R.id.playTrigger);
+        subPlayer =  findViewById(R.id.sub_player);
+        trigger =  findViewById(R.id.playTrigger);
 
-        radiorecyclerViewManager = new GridLayoutManager(getApplicationContext(), 3);
+        Utils deviceUtil = new Utils();
+        int itemWidth = 120;
+        if (deviceUtil.isTablet(this)) {
+            Log.d("Device Type", "This is a tablet");
+            itemWidth = 180;
+        } else {
+            Log.d("Device Type", "This is a mobile");
+        }
+        int numberOfColumns = calculateNoOfColumns(itemWidth);
+
+        radiorecyclerViewManager = new GridLayoutManager(getApplicationContext(), numberOfColumns);
+
         radiorecyclerView.setLayoutManager(radiorecyclerViewManager);
         radiorecyclerView.setItemAnimator(new DefaultItemAnimator());
         radiorecyclerView.addItemDecoration(new GridSpacingItemDecoration(3, 5, true));
 
+        fmlist = new ArrayList<>();
+        getFm();
 
-        /*adapterMusic = new CustomAdapter(Detailed.this,
-                ShoutcastHelper.retrieveShoutcasts(Detailed.this, "bollywood"),"Detailed");
-        radiorecyclerView.setAdapter(adapterMusic);*/
-
-        subPlayer.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent a = new Intent(getApplicationContext(),MyPlayers.class);
-                startActivity(a);
-            }
+        subPlayer.setOnClickListener(view -> {
+            Intent a12 = new Intent(getApplicationContext(),MyPlayers.class);
+            startActivity(a12);
         });
 
-        trigger.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                /*if(TextUtils.isEmpty(FmConstants.fmurl)) return;
-                radioManager.playOrPause(FmConstants.fmname,FmConstants.fmimage,FmConstants.fmurl);*/
-                if (FmConstants.isPlaying) {
-                    radioManager.pausePlaying();
-                    FmConstants.isPlaying =false;
-                    setDatavalues();
-                } else {
-                    radioManager.continuePlaying();
-                    FmConstants.isPlaying =true;
-                    setDatavalues();
-                }
-            }
+        trigger.setOnClickListener(view -> {
+            if(TextUtils.isEmpty(FmConstants.fmurl)) return;
+            radioManager.playOrPause(FmConstants.fmname,FmConstants.fmimage,FmConstants.fmurl);
         });
+        new loadRadioFragments().execute();
         setDatavalues();
     }
 
-    private void checkStatus() {
-        String showAds = firebaseRemoteConfig.getString("norwayShowAds");
-        if (showAds.equals("true")) {
-            loadExitInterstitials();
-        }
-    }
 
-    private void loadExitInterstitials() {
-        AdRequest adRequest = new AdRequest.Builder().build();
-        InterstitialAd.load(this,getResources().getString(R.string.interstitialadid), adRequest, new InterstitialAdLoadCallback() {
-            @Override
-            public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
-                // The mInterstitialAd reference will be null until
-                // an ad is loaded.
-                exitmInterstitialAd = interstitialAd;
-                exitmInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback(){
-                    @Override
-                    public void onAdDismissedFullScreenContent() {
-                        // Called when fullscreen content is dismissed.
-                        paused = false;
-                        loadExitInterstitials();
-                    }
+    public static class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
-                    @Override
-                    public void onAdFailedToShowFullScreenContent(AdError adError) {
-                        // Called when fullscreen content failed to show.
-                        Log.d("TAG", "The ad failed to show.");
-                    }
-
-                    @Override
-                    public void onAdShowedFullScreenContent() {
-                        // Called when fullscreen content is shown.
-                        // Make sure to set your reference to null so you don't
-                        // show it a second time.
-                        exitmInterstitialAd = null;
-                        Log.d("TAG", "The ad was shown.");
-                    }
-                });
-            }
-
-            @Override
-            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-                // Handle the error
-                mInterstitialAd = null;
-            }
-        });
-    }
-
-
-    public class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {
-
-        private int spanCount;
-        private int spacing;
-        private boolean includeEdge;
+        private final int spanCount;
+        private final int spacing;
+        private final boolean includeEdge;
 
         public GridSpacingItemDecoration(int spanCount, int spacing, boolean includeEdge) {
             this.spanCount = spanCount;
@@ -313,21 +169,21 @@ public class Detailed extends AppCompatActivity {
         }
 
         @Override
-        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
-            int position = parent.getChildAdapterPosition(view); // item position
-            int column = position % spanCount; // item column
+        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, RecyclerView parent, @NonNull RecyclerView.State state) {
+            int position = parent.getChildAdapterPosition(view);
+            int column = position % spanCount;
 
             if (includeEdge) {
-                outRect.left = spacing - column * spacing / spanCount; // spacing - column * ((1f / spanCount) * spacing)
-                outRect.right = (column + 1) * spacing / spanCount; // (column + 1) * ((1f / spanCount) * spacing)
+                outRect.left = spacing - column * spacing / spanCount;
+                outRect.right = (column + 1) * spacing / spanCount;
 
-                if (position < spanCount) { // top edge
+                if (position < spanCount) {
                     outRect.top = spacing;
                 }
-                outRect.bottom = spacing; // item bottom
+                outRect.bottom = spacing;
             } else {
-                outRect.left = column * spacing / spanCount; // column * ((1f / spanCount) * spacing)
-                outRect.right = spacing - (column + 1) * spacing / spanCount; // spacing - (column + 1) * ((1f /    spanCount) * spacing)
+                outRect.left = column * spacing / spanCount;
+                outRect.right = spacing - (column + 1) * spacing / spanCount;
                 if (position >= spanCount) {
                     outRect.top = spacing; // item top
                 }
@@ -336,13 +192,12 @@ public class Detailed extends AppCompatActivity {
     }
 
     public void setDatavalues() {
-
         if (FmConstants.isPlaying) {
-            trigger.setImageResource(R.drawable.ic_pause_black);
+            trigger.setImageResource(R.drawable.ic_pause);
         } else {
-            trigger.setImageResource(R.drawable.ic_play_arrow_black);
+            trigger.setImageResource(R.drawable.ic_play);
         }
-        if (FmConstants.fmimage.equals("")) {
+        if (FmConstants.fmimage.isEmpty()) {
             subplayerimage.setDefaultImageResId(R.drawable.norwayradio_small);
         } else {
             subplayerimage.setImageUrl(FmConstants.fmimage, imageLoader);
@@ -350,8 +205,6 @@ public class Detailed extends AppCompatActivity {
         subplayername.setText(FmConstants.fmname);
         subPlayer.setVisibility(View.VISIBLE);
     }
-
-
 
     @Override
     public void onStop() {
@@ -364,19 +217,6 @@ public class Detailed extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         radioManager.bind();
-        db = new DatabaseHandler(getApplicationContext());
-        int count = db.getMessagesCount();
-        if (count == 0) {
-            favoriteslayout.setVisibility(View.GONE);
-        } else {
-            new loadRadioFragments().execute();
-            favoriteslayout.setVisibility(View.VISIBLE);
-        }
-        /*if (paused) {
-            if(exitmInterstitialAd != null) {
-                exitmInterstitialAd.show(Detailed.this);
-            }
-        }*/
     }
 
     @Subscribe
@@ -392,37 +232,15 @@ public class Detailed extends AppCompatActivity {
         }
 
         trigger.setImageResource(status.equals(PlaybackStatus.PLAYING)
-                ? R.drawable.ic_pause_black
-                : R.drawable.ic_play_arrow_black);
-    }
-
-    private AdSize getAdSize() {
-        Display display = getWindowManager().getDefaultDisplay();
-        DisplayMetrics outMetrics = new DisplayMetrics();
-        display.getMetrics(outMetrics);
-        float widthPixels = outMetrics.widthPixels;
-        float density = outMetrics.density;
-        int adWidth = (int) (widthPixels / density);
-        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
-    }
-
-    private void loadBanner() {
-        AdRequest adRequest =
-                new AdRequest.Builder().build();
-        AdSize adSize = getAdSize();
-        adView.setAdSize(adSize);
-        adView.loadAd(adRequest);
+                ? R.drawable.ic_pause
+                : R.drawable.ic_play);
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            if (mInterstitialAd != null) {
-                mInterstitialAd.show(Detailed.this);
-            } else {
-                Intent a = new Intent(getApplicationContext(), Exit.class);
-                startActivity(a);
-            }
+            Intent g = new Intent(getApplicationContext(), Exit.class);
+            startActivity(g);
         }
         return false;
     }
@@ -439,7 +257,7 @@ public class Detailed extends AppCompatActivity {
                 transaction.add(R.id.favorites, favoritesRadio, "favoritesRadio");
                 transaction.commit();
             } catch (IllegalStateException e) {
-                e.printStackTrace();
+                Log.i(TAG,"Exception "+e);
             }
             return null;
         }
@@ -450,51 +268,44 @@ public class Detailed extends AppCompatActivity {
 
     }
 
-
-
-    private void getFMLive() {
-        FM_JSON_URL = "https://ronstech.co.in/fmradio/norway.json";
-        //FM_JSON_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=zgS2MbTNp7suAMaB80NMLRMwhCm6sd4FihYHBcPQaDTGEx1OI5SM1pcLzWtUkMB532CLNJeIMLCo_GPS8ynBVm463UAt1NdTOJmA1Yb3SEsKFZqtv3DaNYcMrmhZHmUMWojr9NvTBuBLhyHCd5hHa1GhPSVukpSQTydEwAEXFXgt_wltjJcH3XHUaaPC1fv5o9XyvOto09QuWI89K6KjOu0SP2F-BdwUMgPXEdWGFtWtiKZAu0OpzarN348uWFs4mhyOA0g3-2l8xNz2_L-YbtVK2l-QLqb-UmXYeZtFRJfXBoJA_D-PCQ&lib=MnrE7b2I2PjfH799VodkCPiQjIVyBAxva";
-        StringRequest request = new StringRequest(Request.Method.GET, FM_JSON_URL, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                try {
-                    JSONArray array=new JSONArray(response);
-                    for(int i=0;i<array.length();i++) {
-                        JSONObject jsonObject=array.getJSONObject(i);
-                        Shoutcast shoutcast = new Shoutcast();
-                        try {
-                            shoutcast.setName(jsonObject.getString("name"));
-                            shoutcast.setImage(jsonObject.getString("image"));
-                            shoutcast.setUrl(jsonObject.getString("stream"));
-                            // Finally, add the object to your arraylist
-                            fmlist.add(shoutcast);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
+    private void getFm() {
+        StringRequest request = new StringRequest(Request.Method.GET, FM_JSON_URL, response -> {
+            try {
+                Log.i(TAG,"getFm "+response);
+                JSONArray array=new JSONArray(response);
+                for(int i=1;i<array.length();i++) {
+                    JSONObject jsonObject=array.getJSONObject(i);
+                    Shoutcast shoutcast = new Shoutcast();
+                    try {
+                        shoutcast.setName(jsonObject.getString("name"));
+                        shoutcast.setImage(jsonObject.getString("image"));
+                        shoutcast.setUrl(jsonObject.getString("stream"));
+                        fmlist.add(shoutcast);
+                    } catch (JSONException e) {
+                        Log.i(TAG,"Exception "+e);
                     }
-                    adapterMusic = new CustomAdapter(Detailed.this,fmlist,"Detailed");
-                    radiorecyclerView.setAdapter(adapterMusic);
-                    radiorecyclerView.getRecycledViewPool().setMaxRecycledViews(0, 0);
-                    progressBar.setVisibility(View.GONE);
-                    splash.setVisibility(View.GONE);
-                } catch (JSONException e) {
-                    e.printStackTrace();
                 }
+                adapterMusic = new CustomAdapter(Detailed.this,fmlist,"Detailed");
+                radiorecyclerView.setAdapter(adapterMusic);
+                radiorecyclerView.getRecycledViewPool().setMaxRecycledViews(0, 0);
+                splash.setVisibility(View.GONE);
+                shimmerFrameLayout.setVisibility(View.GONE);
+                shimmerFrameLayout.stopShimmerAnimation();
+            } catch (NullPointerException | JSONException e) {
+                Log.i(TAG,"Exception "+e);
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                try {
-                    adapterMusic = new CustomAdapter(getApplicationContext(),
-                            ShoutcastHelper.retrieveShoutcasts(Detailed.this, "norway"),"Detailed");
-                    radiorecyclerView.setAdapter(adapterMusic);
-                    radiorecyclerView.getRecycledViewPool().setMaxRecycledViews(0, 0);
-                    progressBar.setVisibility(View.GONE);
-                    splash.setVisibility(View.GONE);
-                } catch (NullPointerException e) {
-                    e.printStackTrace();
-                }
+        }, error -> {
+            try {
+                Log.i(TAG,"Backup");
+                adapterMusic = new CustomAdapter(getApplicationContext(),
+                        ShoutcastHelper.retrieveShoutcasts(Detailed.this, "english"),"Detailed");
+                radiorecyclerView.setAdapter(adapterMusic);
+                radiorecyclerView.getRecycledViewPool().setMaxRecycledViews(0, 0);
+                splash.setVisibility(View.GONE);
+                shimmerFrameLayout.setVisibility(View.GONE);
+                shimmerFrameLayout.stopShimmerAnimation();
+            } catch (NullPointerException e) {
+                Log.i(TAG,"Exception "+e);
             }
         });
 
@@ -502,16 +313,42 @@ public class Detailed extends AppCompatActivity {
         requestQueue.add(request);
     }
 
-
     @Override
-    protected void onPause() {
-        super.onPause();
-        paused = true;
-    }
-
-    @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         radioManager.unbind();
         super.onDestroy();
     }
+
+    public void getNotificationPermission() {
+        try {
+            if (Build.VERSION.SDK_INT > 32) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
+                        PERMISSION_REQUEST_CODE);
+            }
+        } catch (Exception e) {
+            Log.i(TAG,"Exception "+e);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == PERMISSION_REQUEST_CODE) {// If request is cancelled, the result arrays are empty.
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // allow
+            } else {
+                //deny
+            }
+        }
+
+    }
+
+    private int calculateNoOfColumns(int itemWidthDp) {
+        DisplayMetrics displayMetrics = this.getResources().getDisplayMetrics();
+        float screenWidthDp = displayMetrics.widthPixels / displayMetrics.density;
+        return Math.max(2, (int) (screenWidthDp / itemWidthDp));
+    }
+
 }

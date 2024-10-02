@@ -78,16 +78,13 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.MyViewHold
         } else {
             imageView.setImageUrl(shoutcasts.get(listPosition).getImage(), imageLoader);
         }
-        imageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                radioManager.playOrPause(shoutcasts.get(listPosition).getName(), shoutcasts.get(listPosition).getImage(), shoutcasts.get(listPosition).getUrl());
-                try {
-                    ((Detailed) mContext).setDatavalues();
-                    Toast.makeText(mContext, "Loading..", Toast.LENGTH_SHORT).show();
-                } catch (NullPointerException | ClassCastException e) {
-                    e.printStackTrace();
-                }
+        imageView.setOnClickListener(view -> {
+            radioManager.playOrPause(shoutcasts.get(listPosition).getName(), shoutcasts.get(listPosition).getImage(), shoutcasts.get(listPosition).getUrl());
+            try {
+                ((Detailed) mContext).setDatavalues();
+                Toast.makeText(mContext, "Loading..", Toast.LENGTH_SHORT).show();
+            } catch (NullPointerException | ClassCastException e) {
+                e.printStackTrace();
             }
         });
     }

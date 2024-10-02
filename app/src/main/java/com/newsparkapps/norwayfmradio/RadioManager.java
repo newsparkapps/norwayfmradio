@@ -1,29 +1,41 @@
 package com.newsparkapps.norwayfmradio;
 
-
+import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
-
-import androidx.core.content.ContextCompat;
 
 import org.greenrobot.eventbus.EventBus;
 
 public class RadioManager {
+    @SuppressLint("StaticFieldLeak")
     private static RadioManager instance = null;
-    private static RadioService service;
-    private String TAG = "RadioManager";
-    private Context context;
-    private boolean serviceBound;
+    private static MyForeGroundServices myForeGroundServices;
+    private final String TAG = "RadioManager";
+    private final Context context;
+    boolean serviceBound;
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName arg0, IBinder binder) {
+            Log.i(TAG, "onServiceConnected ");
+            try {
+                myForeGroundServices = ((MyForeGroundServices.LocalBinders) binder).getService();
+                serviceBound = true;
+            } catch (ClassCastException e) {
+                Log.i(TAG, "onServiceConnected ClassCastException "+e);
+            }
+        }
 
-    private RadioManager(Context context) {
-        Log.i(TAG,"RadioManager Constructor ");
-        this.context = context;
-        serviceBound = false;
-    }
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            Log.i(TAG, "onServiceDisconnected ");
+            serviceBound = false;
+        }
+    };
 
     public static RadioManager with(Context context) {
         if (instance == null)
@@ -31,85 +43,97 @@ public class RadioManager {
         return instance;
     }
 
-    public static RadioService getService() {
-        return service;
+    public static MyForeGroundServices getService() {
+        return myForeGroundServices;
     }
+
 
     public void playOrPause(String name, String image, String streamUrl) {
         Log.i(TAG,"playOrPause "+name+ " "+image+" "+streamUrl);
         try {
-            //service.cancelNotification();
-            service.playOrPause(streamUrl);
+            myForeGroundServices.playOrPause(streamUrl);
             FmConstants.fmimage = image;
             FmConstants.fmname = name;
             FmConstants.fmurl = streamUrl;
             FmConstants.isPlaying = true;
-            service.setMedia(FmConstants.fmname, FmConstants.fmurl, false);
+            myForeGroundServices.setMedia(FmConstants.fmname, FmConstants.fmurl, false);
         } catch (NullPointerException e) {
-            e.printStackTrace();
+            Log.i(TAG, "Exception "+e);
         }
     }
 
     public boolean isPlaying() {
-        Log.i(TAG,"isPlaying ");
-        return service.isPlaying();
+        Log.i(TAG, "isPlaying ");
+        return myForeGroundServices.isPlaying();
+    }
+
+    private RadioManager(Context context) {
+        Log.i(TAG, "RadioManager Constructor ");
+        this.context = context;
+        serviceBound = false;
+    }
+
+    public void pausePlaying() {
+        Log.i(TAG, "pausePlaying ");
+        try {
+            if (myForeGroundServices != null) {
+                myForeGroundServices.pause();
+            }
+        } catch (NullPointerException e) {
+            Log.i(TAG, "Exception "+e);
+        }
+    }
+
+    public void stopPlaying() {
+        Log.i(TAG, "stopPlaying ");
+        try {
+            if (myForeGroundServices != null) {
+                myForeGroundServices.stop();
+            }
+        } catch (NullPointerException e) {
+            Log.i(TAG, "Exception "+e);
+        }
     }
 
     public void bind() {
         try {
-            Log.i(TAG,"bind ");
-            Intent intent = new Intent(context, RadioService.class);
-            context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
-            if (service != null)
-                EventBus.getDefault().post(service.getStatus());
-        } catch (NullPointerException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void pausePlaying() {
-        Log.i(TAG,"pausePlaying ");
-        try {
-            if (service != null) {
-                service.pause();
+            Log.i(TAG, "bind ");
+            Intent serviceIntent = new Intent(context, MyForeGroundServices.class);
+            serviceIntent.setAction(MyForeGroundServices.ACTION_INIT);
+            context.bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+            if (myForeGroundServices != null)
+                EventBus.getDefault().post(myForeGroundServices.getStatus());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent);
+            } else {
+                context.startService(serviceIntent);
             }
+
         } catch (NullPointerException e) {
-            e.printStackTrace();
+            Log.i(TAG, "Exception "+e);
         }
     }
 
     public void continuePlaying() {
-        Log.i(TAG,"continuePlaying ");
+        Log.i(TAG, "continuePlaying ");
         try {
-            if (service != null) {
-                service.play(FmConstants.fmurl);
+            if (myForeGroundServices != null) {
+                myForeGroundServices.play(FmConstants.fmurl);
             }
         } catch (NullPointerException e) {
-            e.printStackTrace();
+            Log.i(TAG, "Exception "+e);
         }
     }
 
     public void unbind() {
-        Log.i(TAG,"unbind ");
+        Log.i(TAG, "unbind ");
         try {
+            stopPlaying();
             context.unbindService(serviceConnection);
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
+            myForeGroundServices.stopForegroundService();
+        } catch (RuntimeException e) {
+            Log.i(TAG, "Exception "+e);
         }
     }
-
-    private ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName arg0, IBinder binder) {
-            Log.i(TAG,"onServiceConnected ");
-            service = ((RadioService.LocalBinder) binder).getService();
-            serviceBound = true;
-        }
-        @Override
-        public void onServiceDisconnected(ComponentName arg0) {
-            Log.i(TAG,"onServiceDisconnected ");
-            serviceBound = false;
-        }
-    };
 
 }

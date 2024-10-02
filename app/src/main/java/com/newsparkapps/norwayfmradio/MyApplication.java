@@ -1,5 +1,7 @@
 package com.newsparkapps.norwayfmradio;
 
+import static com.newsparkapps.norwayfmradio.FmConstants.OPEN_AD_ID;
+
 import android.app.Activity;
 import android.app.Application;
 import android.app.Application.ActivityLifecycleCallbacks;
@@ -203,7 +205,7 @@ public class MyApplication extends Application
             AdRequest request = new AdRequest.Builder().build();
             AppOpenAd.load(
                     context,
-                    AD_UNIT_ID,
+                    OPEN_AD_ID,
                     request,
                     AppOpenAd.APP_OPEN_AD_ORIENTATION_PORTRAIT,
                     new AppOpenAdLoadCallback() {

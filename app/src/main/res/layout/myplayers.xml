@@ -9,42 +9,70 @@
     android:background="@color/bgcolor">
 
 
+    <ImageView
+        android:id="@+id/bgImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.3"
+        android:scaleType="fitXY"
+        android:src="@drawable/norwayradio_small" />
+
+
     <LinearLayout
         android:id="@+id/adlayout"
-        android:layout_width="match_parent"
+        android:layout_width="fill_parent"
         android:layout_height="130dp"
         android:layout_alignParentTop="true"
+        android:visibility="gone"
         android:orientation="vertical">
 
         <FrameLayout
             android:id="@+id/fl_adplaceholder"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
+
+    <FrameLayout
+        android:id="@+id/ad_view_container2"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_gravity="center|center_vertical|center_horizontal"
+        android:gravity="center|center_vertical|center_horizontal" />
 
 
     <com.newsparkapps.norwayfmradio.Circle_image
         android:id="@+id/stationimage"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
+        android:layout_width="180dp"
+        android:layout_height="180dp"
         android:scaleType="centerCrop"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="160dp"
-        android:src="@drawable/norwayradio_small"
+        android:layout_centerInParent="true"
+        android:padding="5dp"
         app:border_color="@android:color/transparent"
         app:border_width="0dp" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/animationView"
+        android:layout_width="800dp"
+        android:layout_height="800dp"
+        android:layout_centerInParent="true"
+        android:scaleX="1.5"
+        android:scaleY="1.5"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true"
+        app:lottie_rawRes="@raw/wave1" />
 
     <TextView
         android:id="@+id/stationame"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/stationimage"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="10dp"
         android:text="stationame"
         android:textColor="#fff"
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        android:layout_marginTop="10dp"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/stationimage" />
 
     <LinearLayout
         android:id="@+id/playTriggerlayout"
@@ -70,6 +98,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             app:srcCompat="@drawable/ic_favorites"/>
+
     </LinearLayout>
 
 
@@ -107,11 +136,5 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"/>
-
-    <dyanamitechetan.vusikview.VusikView
-        android:layout_width="match_parent"
-        android:id="@+id/vusikView"
-        android:layout_height="match_parent"
-        />
 
 </RelativeLayout>
