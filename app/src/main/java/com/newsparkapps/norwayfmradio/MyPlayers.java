@@ -1,274 +1,298 @@
 package com.newsparkapps.norwayfmradio;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
-import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
-import com.google.android.gms.ads.AdView;
-import com.nostra13.universalimageloader.core.DisplayImageOptions;
-import com.nostra13.universalimageloader.core.ImageLoader;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.ImageLoader;
+import com.android.volley.toolbox.NetworkImageView;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
-public class MyPlayers extends AppCompatActivity {
-    ImageView favorites, bgImage;
-    RadioManager radioManager;
+import java.util.Objects;
+
+public class MyPlayers extends BaseActivity {
     private static final String TAG = "MyPlayers";
-    ImageButton trigger;
-    private ImageLoader imageLoader = ImageLoader.getInstance();
-    private SeekBar mediaVlmSeekBar = null;
-    AudioManager audiomanager;
-    Circle_image stationIcon;
-    private DisplayImageOptions options;
-    TextView stationName;
-    RelativeLayout bglayout;
-    DatabaseHandler db;
-    String language;
-    boolean addedornot;
-    SharedPreferences.Editor editor;
+    private ImageView favorites, bgImage;
+    private ImageButton trigger;
+    private TextView subPlayerName;
+    private NetworkImageView subPlayerImage;
+    ImageLoader imageLoader;
+    private Bitmap stationImageBitmap;
+    private TextView stationName;
+    private SeekBar volumeSeekBar;
+    private Station currentStation;
+    private Circle_image stationIcon;
+    private RadioManager radioManager;
+    private AudioManager audioManager;
+    private DatabaseHandler db;
 
-    @SuppressLint("UseCompatLoadingForDrawables")
+    private boolean isFavorite;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.myplayers);
 
-        radioManager = RadioManager.with(this);
-        stationName = findViewById(R.id.stationame);
-        trigger = findViewById(R.id.playTrigger);
-        stationIcon = findViewById(R.id.stationimage);
-        bglayout = findViewById(R.id.bglayout);
-        favorites = findViewById(R.id.favorites);
-        bgImage = findViewById(R.id.bgImage);
+        radioManager = RadioManager.with(getApplicationContext());
         db = new DatabaseHandler(this);
 
-        Intent a = getIntent();
-        language = a.getStringExtra("language");
+        setupToolbar();
+        initViews();
+        setupAudioControls();
+        setupAds();
+        setupClickListeners();
 
 
-        startAdRequesting();
+        imageLoader = MyApp.getInstance().getImageLoader();
+    }
 
+    /* -------------------- UI SETUP -------------------- */
+
+    private void setupToolbar() {
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        View rootView = findViewById(R.id.bglayout);
+        Utils.enableEdgeToEdge(this, rootView);
+        Objects.requireNonNull(getSupportActionBar()).setTitle(R.string.app_name);
+    }
+
+    private void initViews() {
+        trigger = findViewById(R.id.playTrigger);
+        favorites = findViewById(R.id.favorites);
+        bgImage = findViewById(R.id.bgImage);
+        stationIcon = findViewById(R.id.stationimage);
+        stationName = findViewById(R.id.stationame);
+        volumeSeekBar = findViewById(R.id.seekBar);
+        subPlayerName = findViewById(R.id.subplayername);
+        subPlayerImage = findViewById(R.id.subplayerimage);
+    }
+
+    /* -------------------- AUDIO -------------------- */
+
+    private void setupAudioControls() {
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
+
+        volumeSeekBar.setMax(
+                audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        );
+        volumeSeekBar.setProgress(
+                audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        );
+
+        volumeSeekBar.setOnSeekBarChangeListener(
+                new SeekBar.OnSeekBarChangeListener() {
+                    @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+                    @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+
+                    @Override
+                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                        if (fromUser) {
+                            audioManager.setStreamVolume(
+                                    AudioManager.STREAM_MUSIC, progress, 0
+                            );
+                        }
+                    }
+                }
+        );
+    }
+
+    /* -------------------- ADS -------------------- */
+
+    private void setupAds() {
         try {
-            if (AdmobUtils.getAdOnStatus(this).equals("zero")) {
-                AdmobUtils.setAdOnStatus(this,"one");
-            } else {
+            FrameLayout adContainer = findViewById(R.id.ad_view_container);
+            setupBanner(adContainer);
+
+            if ("one".equals(AdmobUtils.getAdOnStatus(this))) {
                 AdmobUtils.loadInterstitialAd(this);
-                AdmobUtils.setAdOnStatus(this,"zero");
+                AdmobUtils.setAdOnStatus(this, "zero");
+            } else {
+                AdmobUtils.setAdOnStatus(this, "one");
             }
-        } catch (NullPointerException e) {
-            Log.i(TAG,"Exception "+e);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+    }
 
-        addedornot = db.getFavorite(FmConstants.fmname);
-        if (addedornot) {
-            favorites.setImageResource(R.drawable.ic_favorites_active);
-        } else {
-            favorites.setImageResource(R.drawable.ic_favorites);
-        }
-
-
-        this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
-        initControls();
-
+    private void loadStationImage(String imageUrl) {
         try {
-            mediaVlmSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                public void onStopTrackingTouch(SeekBar arg0) {
+            imageLoader.get(imageUrl, new ImageLoader.ImageListener() {
+
+                @Override
+                public void onResponse(
+                        ImageLoader.ImageContainer response,
+                        boolean isImmediate
+                ) {
+                    if (response.getBitmap() != null) {
+                        stationImageBitmap = response.getBitmap();
+                        stationIcon.setImageBitmap(stationImageBitmap);
+                    }
                 }
 
-                public void onStartTrackingTouch(SeekBar arg0) {
-                }
-
-                public void onProgressChanged(SeekBar arg0, int progress, boolean arg2) {
-                    audiomanager.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0);
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    Log.e(TAG, "Image load failed", error);
                 }
             });
         } catch (Exception e) {
-            Log.i(TAG,"Exception "+e);
+            e.printStackTrace();
         }
+    }
 
-        setDatavalues();
+    /* -------------------- CLICK HANDLERS -------------------- */
 
-        trigger.setOnClickListener(view -> {
-            if (FmConstants.isPlaying) {
-                radioManager.pausePlaying();
-                FmConstants.isPlaying = false;
-                setDatavalues();
-            } else {
-                radioManager.continuePlaying();
-                FmConstants.isPlaying = true;
-                setDatavalues();
-            }
-        });
-
-        favorites.setOnClickListener(v -> {
-            try {
-                final Handler handler = new Handler();
-                handler.postDelayed(() -> {
-                    addedornot = db.getFavorite(FmConstants.fmname);
-                    if (addedornot) {
-                        db.deleteMessage(new MyFourites(FmConstants.fmname, FmConstants.fmurl, FmConstants.fmimage));
-                        favorites.setImageResource(R.drawable.ic_favorites);
-                        Toast.makeText(getApplicationContext(), "Removed from favorite list", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Utils.setFavoritesAnalytics(FmConstants.fmname, getApplicationContext());
-                        db.addShoutcast(new MyFourites(FmConstants.fmname, FmConstants.fmurl, FmConstants.fmimage));
-                        favorites.setImageResource(R.drawable.ic_favorites_active);
-                        Toast.makeText(getApplicationContext(), "Added to favorite list", Toast.LENGTH_SHORT).show();
+    private void setupClickListeners() {
+        trigger.setOnClickListener(v -> togglePlayback());
+        favorites.setOnClickListener(v -> toggleFavorite());
+        getOnBackPressedDispatcher().addCallback(this,
+                new OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        if (AdmobUtils.isInterstitialAdLoaded()) {
+                            AdmobUtils.showInterstitialAd(MyPlayers.this, Dashboard.class);
+                        } else {
+                            Intent a  = new Intent(MyPlayers.this, Dashboard.class);
+                            startActivity(a);
+                        }
                     }
-                }, 500);
-            } catch (RuntimeException e) {
-                Log.i(TAG,"Exception "+e);
+                });
+    }
+
+    /* -------------------- PLAYER -------------------- */
+
+    private void togglePlayback() {
+        radioManager.toggle();
+        updatePlayButton();
+    }
+
+    private void updatePlayButton() {
+        trigger.setImageResource(
+                FmConstants.isPlaying ? R.drawable.ic_pause : R.drawable.ic_play
+        );
+    }
+
+    /* -------------------- FAVORITES -------------------- */
+
+    private void toggleFavorite() {
+        try {
+            isFavorite = db.getFavorite(currentStation.name);
+            if (isFavorite) {
+                db.deleteMessage(
+                        new MyFourites(currentStation.name, currentStation.url, currentStation.image)
+                );
+                favorites.setImageResource(R.drawable.ic_favorites);
+                Toast.makeText(this, "Removed from favorite list", Toast.LENGTH_SHORT).show();
+            } else {
+                Utils.setFMAnalytics("Fav_"+currentStation.name, getApplicationContext());
+                db.addShoutcast(
+                        new MyFourites(currentStation.name, currentStation.url, currentStation.image)
+                );
+                favorites.setImageResource(R.drawable.ic_favorites_active);
+                Toast.makeText(this, "Added to favorite list", Toast.LENGTH_SHORT).show();
             }
-        });
-
-        options = new DisplayImageOptions.Builder()
-                .showImageOnLoading(getResources().getDrawable(R.drawable.norwayradio_small))
-                .showImageForEmptyUri(getResources().getDrawable(R.drawable.norwayradio_small))
-                .showImageOnFail(getResources().getDrawable(R.drawable.norwayradio_small))
-                .cacheInMemory(true)
-                .cacheOnDisk(true)
-                .considerExifParams(true)
-                .build();
-
-        imageLoader.displayImage(FmConstants.fmimage, stationIcon, options, null);
-        stationName.setText(FmConstants.fmname);
-        imageLoader.displayImage(FmConstants.fmimage, bgImage, options, null);
-        Utils.setPlayerAnalytics(FmConstants.fmname, getApplicationContext());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
+    /* -------------------- UI UPDATE -------------------- */
+
+    private void updateUI() {
+        updatePlayButton();
+        if (currentStation != null) {
+            stationName.setText(currentStation.name);
+            stationIcon.setImageBitmap(stationImageBitmap);
+            bgImage.setImageResource(R.drawable.norway_fm_radio_logo);
+            isFavorite = db.getFavorite(currentStation.name);
+            Utils.setFMAnalytics("Player_"+currentStation.name, getApplicationContext());
+        }
+        favorites.setImageResource(
+                isFavorite ? R.drawable.ic_favorites_active : R.drawable.ic_favorites
+        );
+    }
+
+    /* -------------------- LIFECYCLE -------------------- */
 
     @Override
-    protected void onSaveInstanceState(@NonNull Bundle oldInstanceState) {
-        super.onSaveInstanceState(oldInstanceState);
-        oldInstanceState.clear();
-    }
-
-    private void startAdRequesting() {
-        FrameLayout adContainer = findViewById(R.id.ad_view_container);
-        AdView adView1 = AdmobUtils.createAdView(this);
-        adContainer.addView(adView1);
-        AdmobUtils.loadBannerAd(this, adView1);
-
-
-        FrameLayout adSquareContainer1 = findViewById(R.id.ad_view_container2);
-        AdView adView2 = AdmobUtils.createSmallSquareAdView(this);
-        adSquareContainer1.addView(adView2);
-        AdmobUtils.loadBannerAd(this, adView2);
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        Intent a = getIntent();
-        language = a.getStringExtra("language");
-        setDatavalues();
-    }
-
-    @Override
-    public void onStart() {
+    protected void onStart() {
         super.onStart();
         EventBus.getDefault().register(this);
+        radioManager.startAndBind();
     }
 
     @Override
-    public void onStop() {
+    protected void onStop() {
         EventBus.getDefault().unregister(this);
+        radioManager.unbind();
         super.onStop();
-    }
-
-
-
-    @Override
-    public void onResume() {
-        super.onResume();
     }
 
     @Subscribe
     public void onEvent(String status) {
-        switch (status) {
-            case PlaybackStatus.LOADING:
-                // Do Nothing
-                break;
+        if (PlaybackStatus.ERROR.equals(status)) {
+            Toast.makeText(this, "Station not available", Toast.LENGTH_SHORT).show();
+        }
+        updateUI();
+    }
 
-            case PlaybackStatus.ERROR:
-                Toast.makeText(getApplicationContext(), "Station not available", Toast.LENGTH_SHORT).show();
-                break;
+    @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
+    public void onStationChanged(StationChangedEvent event) {
+        Station station = event.station;
+        currentStation = event.station;
+        stationName.setText(station.name);
+        loadStationImage(station.image);
+        stationIcon.setImageBitmap(stationImageBitmap);
+        bgImage.setImageResource(R.drawable.norway_fm_radio_logo);
+        trigger.setImageResource(
+                event.isPlaying ? R.drawable.ic_pause : R.drawable.ic_play
+        );
+
+        subPlayerName.setText(currentStation.name);
+
+        subPlayerImage.setDefaultImageResId(R.drawable.norway_fm_radio_logo);
+
+        if (station.image != null && !station.image.isEmpty()) {
+            subPlayerImage.setImageUrl(
+                    currentStation.image,
+                    imageLoader
+            );
         }
     }
 
-    private void initControls() {
-        audiomanager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        mediaVlmSeekBar = findViewById(R.id.seekBar);
-        mediaVlmSeekBar.setMax(audiomanager.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
-        mediaVlmSeekBar.setProgress(audiomanager.getStreamVolume(AudioManager.STREAM_MUSIC));
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.player_menu, menu);
+        return true;
     }
 
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (event.getAction() == KeyEvent.ACTION_DOWN) {
-            if (keyCode == KeyEvent.KEYCODE_BACK) {
-                if (AdmobUtils.isInterstitialAdLoaded()) {
-                    AdmobUtils.showInterstitialAd(this,Detailed.class);
-                } else {
-                    finish();
-                }
-                return true;
-            }
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.home) {
+            Intent a = new Intent(this, Dashboard.class);
+            startActivity(a);
         }
-        return super.onKeyDown(keyCode, event);
-    }
-
-    public void setDatavalues() {
-        if (FmConstants.isPlaying) {
-            trigger.setImageResource(R.drawable.ic_pause);
-        } else {
-            trigger.setImageResource(R.drawable.ic_play);
-        }
-    }
-
-    /**
-     * Called when leaving the activity
-     */
-    @Override
-    public void onPause() {
-        super.onPause();
-    }
-
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        imageLoader = null;
-        radioManager = null;
-        trigger = null;
-        favorites = null;
-        bgImage = null;
-        mediaVlmSeekBar = null;
-        audiomanager = null;
-        stationIcon = null;
-        options = null;
-        stationName = null;
-        bglayout = null;
-        db = null;
-        language = null;
-        addedornot = false;
-        editor = null;
+        return super.onOptionsItemSelected(item);
     }
 }

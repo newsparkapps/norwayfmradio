@@ -1,16 +1,13 @@
 package com.newsparkapps.norwayfmradio;
 
-
-
 import android.content.Context;
-import android.content.Intent;
-import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.toolbox.ImageLoader;
@@ -20,79 +17,84 @@ import com.newsparkapps.norwayfmradio.util.Shoutcast;
 import java.util.List;
 
 public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.MyViewHolder> {
-    Context mContext;
-    RadioManager radioManager;
-    String presentactivity;
-    private List<Shoutcast> shoutcasts;
-    ImageLoader imageLoader = MyApplication.getInstance().getImageLoader();
 
-    public static class MyViewHolder extends RecyclerView.ViewHolder {
-        TextView name;
-        TextView site;
-        NetworkImageView imageViewIcon;
+    private final Context context;
+    private final List<Shoutcast> shoutcasts;
+    private final RadioManager radioManager;
 
-        public MyViewHolder(View itemView) {
+    private final ImageLoader imageLoader;
+
+    /* -------------------- CONSTRUCTOR -------------------- */
+
+    public CustomAdapter(@NonNull Context context,
+                         @NonNull List<Shoutcast> shoutcasts,
+                         @NonNull String from) {
+
+        this.context = context;
+        this.shoutcasts = shoutcasts;
+        this.radioManager = RadioManager.with(context);
+
+        this.imageLoader = MyApp.getInstance().getImageLoader();
+    }
+
+    /* -------------------- VIEW HOLDER -------------------- */
+
+    static class MyViewHolder extends RecyclerView.ViewHolder {
+
+        final TextView name;
+        final NetworkImageView icon;
+
+        MyViewHolder(@NonNull View itemView) {
             super(itemView);
-            this.name = (TextView) itemView.findViewById(R.id.name);
-            this.site = (TextView) itemView.findViewById(R.id.site);
-            this.imageViewIcon = (NetworkImageView) itemView.findViewById(R.id.imageView);
+            name = itemView.findViewById(R.id.name);
+            icon = itemView.findViewById(R.id.imageView);
         }
     }
 
-    public CustomAdapter(Context context, List<Shoutcast> shoutcasts, String activity) {
-        this.shoutcasts = shoutcasts;
-        this.mContext = context;
-        this.presentactivity = activity;
-        radioManager = RadioManager.with(context);
+    /* -------------------- ADAPTER METHODS -------------------- */
 
-    }
-
+    @NonNull
     @Override
-    public MyViewHolder onCreateViewHolder(ViewGroup parent,
-                                           int viewType) {
+    public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.cards_layout, parent, false);
-        MyViewHolder myViewHolder = new MyViewHolder(view);
-        return myViewHolder;
+        return new MyViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(final MyViewHolder holder, final int listPosition) {
+    public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
+        Shoutcast item = shoutcasts.get(position);
+        holder.name.setText(item.getName());
+        // 🔥 RESET recycled image (VERY IMPORTANT)
+        holder.icon.setImageDrawable(null);
 
-        final TextView name = holder.name;
-        TextView site = holder.site;
-        NetworkImageView imageView = holder.imageViewIcon;
-        Typeface custom_font = Typeface.createFromAsset(mContext.getAssets(), "fonts/Muli-Regular.ttf");
+        // 🔥 ALWAYS set default & error images
+        holder.icon.setDefaultImageResId(R.drawable.norway_fm_radio_logo);
+        holder.icon.setErrorImageResId(R.drawable.norway_fm_radio_logo);
 
-        if (imageLoader == null)
-            imageLoader = MyApplication.getInstance().getImageLoader();
+        if (item.getImage() != null && !item.getImage().isEmpty()) {
+            holder.icon.setImageUrl(item.getImage(), imageLoader);
 
-        name.setText(shoutcasts.get(listPosition).getName());
-        site.setText(shoutcasts.get(listPosition).getUrl());
-        name.setTypeface(custom_font);
-
-        imageView.setDefaultImageResId(R.drawable.norwayradio_small);
-
-        if (shoutcasts.get(listPosition).getImage().equals("")) {
-            //imageView.setImageResource(R.drawable.ticketlogo_not);
         } else {
-            imageView.setImageUrl(shoutcasts.get(listPosition).getImage(), imageLoader);
+            holder.icon.setDefaultImageResId(R.drawable.norway_fm_radio_logo);
         }
-        imageView.setOnClickListener(view -> {
-            radioManager.playOrPause(shoutcasts.get(listPosition).getName(), shoutcasts.get(listPosition).getImage(), shoutcasts.get(listPosition).getUrl());
-            try {
-                ((Detailed) mContext).setDatavalues();
-                Toast.makeText(mContext, "Loading..", Toast.LENGTH_SHORT).show();
-            } catch (NullPointerException | ClassCastException e) {
-                e.printStackTrace();
-            }
-        });
+
+        holder.icon.setOnClickListener(v -> onRadioClicked(item));
     }
 
     @Override
     public int getItemCount() {
-        return shoutcasts.size();
+        return shoutcasts != null ? shoutcasts.size() : 0;
     }
 
-
+    /* -------------------- CLICK HANDLER -------------------- */
+    public void onRadioClicked(@NonNull Shoutcast shoutcast) {
+        radioManager.play(
+                shoutcast.getName(),
+                shoutcast.getImage(),
+                shoutcast.getUrl()
+        );
+        radioManager.toggle();
+        Toast.makeText(context, "Loading…", Toast.LENGTH_SHORT).show();
+    }
 }

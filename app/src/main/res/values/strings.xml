@@ -9,6 +9,9 @@
     <string name="interstitialadid">ca-app-pub-4257458430524860/6605650573</string>
     <string name="nativeadid">ca-app-pub-4257458430524860/4088402093</string>
 
+
+    <string name="backagain">Please click back button again to exit</string>
+
     <!--Test Ads-->
     <!--<string name="banneradid">ca-app-pub-3940256099942544/6300978111</string>
     <string name="interstitialadid">ca-app-pub-3940256099942544/1033173712</string>
