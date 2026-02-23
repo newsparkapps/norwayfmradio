@@ -1,4 +1,4 @@
-package com.newsparkapps.norwayfmradio;
+package com.newsparkapps.norwayfmradio.activities;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -8,6 +8,8 @@ import android.os.Looper;
 
 import androidx.annotation.Nullable;
 
+import com.newsparkapps.norwayfmradio.R;
+
 public class Splash extends Activity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -16,7 +18,7 @@ public class Splash extends Activity {
 
         final Handler handler = new Handler(Looper.getMainLooper());
         handler.postDelayed(() -> {
-            Intent a = new Intent(getApplicationContext(), Dashboard.class);
+            Intent a = new Intent(getApplicationContext(), Home.class);
             startActivity(a);
             finish();
         },2000);

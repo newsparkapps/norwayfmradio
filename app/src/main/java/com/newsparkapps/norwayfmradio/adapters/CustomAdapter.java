@@ -1,4 +1,4 @@
-package com.newsparkapps.norwayfmradio;
+package com.newsparkapps.norwayfmradio.adapters;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -12,6 +12,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.NetworkImageView;
+import com.newsparkapps.norwayfmradio.MyApp;
+import com.newsparkapps.norwayfmradio.R;
+import com.newsparkapps.norwayfmradio.RadioManager;
 import com.newsparkapps.norwayfmradio.util.Shoutcast;
 
 import java.util.List;
@@ -65,8 +68,6 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.MyViewHold
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
         Shoutcast item = shoutcasts.get(position);
         holder.name.setText(item.getName());
-        // 🔥 RESET recycled image (VERY IMPORTANT)
-        holder.icon.setImageDrawable(null);
 
         // 🔥 ALWAYS set default & error images
         holder.icon.setDefaultImageResId(R.drawable.norway_fm_radio_logo);
@@ -80,6 +81,13 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.MyViewHold
         }
 
         holder.icon.setOnClickListener(v -> onRadioClicked(item));
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull MyViewHolder holder) {
+        super.onViewRecycled(holder);
+        // Cancel pending request safely
+        holder.icon.setImageUrl(null, imageLoader);
     }
 
     @Override

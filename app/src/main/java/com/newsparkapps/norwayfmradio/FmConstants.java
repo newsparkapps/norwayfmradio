@@ -4,12 +4,11 @@ public class FmConstants {
 
     public FmConstants() {
     }
-
     public static String TAG = "Norway FM Radio";
     public static String APP_NAME = "Norway FM Radio";
-    public static String BANNER_AD_ID = "ca-app-pub-4257458430524860/4171058920";
-    public static String INTERSTITIAL_AD_ID = "ca-app-pub-4257458430524860/6605650573";
-    public static String OPEN_AD_ID = "ca-app-pub-4257458430524860/1161752202";
+    public static String BANNER_AD_CODE = "ca-app-pub-4257458430524860/4171058920";
+    public static String INTERSTITIAL_CODE = "ca-app-pub-4257458430524860/6605650573";
+    public static String OPEN_AD_CODE = "ca-app-pub-4257458430524860/1161752202";
     public static String MyClass = "dash";
     public static String fmname="";
     public static String APP_URL =  "https://play.google.com/store/apps/details?id=com.newsparkapps.norwayfmradio";

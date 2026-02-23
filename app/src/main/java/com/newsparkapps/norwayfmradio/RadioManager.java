@@ -139,4 +139,10 @@ public class RadioManager {
     public Station getCurrentStation() {
         return currentStation;
     }
+
+
+
+    public void killFMService() {
+        service.killFMService();
+    }
 }

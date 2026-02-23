@@ -1,4 +1,4 @@
-package com.newsparkapps.norwayfmradio;
+package com.newsparkapps.norwayfmradio.activities;
 
 import static com.newsparkapps.norwayfmradio.FmConstants.APP_URL;
 
@@ -8,19 +8,20 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Window;
-import android.widget.Button;
-import android.widget.FrameLayout;
+import android.widget.ImageView;
 
-import com.google.android.gms.ads.AdView;
+import com.newsparkapps.norwayfmradio.R;
+import com.newsparkapps.norwayfmradio.RadioManager;
+import com.newsparkapps.norwayfmradio.Utils;
 
 /**
  * Created by Roney on 9/16/2017.
  */
 
 public class Exit extends Activity {
-    Button exit, rateus;
-    public static String TAG = "Exit";
-
+    ImageView exit, rateus;
+    RadioManager radioManager;
+    private final String TAG = "Exit";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -30,23 +31,22 @@ public class Exit extends Activity {
 
         exit = findViewById(R.id.exit);
         rateus = findViewById(R.id.rateusbutton);
+        radioManager = RadioManager.with(this);
 
-        FrameLayout adSquareContainer1 = findViewById(R.id.ad_view_container);
-        AdView adView2 = AdmobUtils.createSmallSquareAdView(this);
-        adSquareContainer1.addView(adView2);
-        AdmobUtils.loadBannerAd(this, adView2);
+        Utils.setFMAnalytics("Exit",this);
 
         exit.setOnClickListener(view -> {
             try {
+                radioManager.killFMService();
                 Intent i = new Intent();
                 i.setAction(Intent.ACTION_MAIN);
                 i.addCategory(Intent.CATEGORY_HOME);
                 startActivity(i);
                 finish();
             } catch (SecurityException e) {
-                Log.i(TAG,"Exception "+e);
+                Log.i(TAG,"Exception"+e);
             }
-        });
+        }); 
 
         rateus.setOnClickListener(view -> {
             Intent intent = new Intent(Intent.ACTION_VIEW);

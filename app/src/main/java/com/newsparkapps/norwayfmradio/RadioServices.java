@@ -46,8 +46,7 @@ public class RadioServices extends Service implements Player.Listener {
     private Station currentStation;
     private Bitmap currentLargeIcon;
     boolean userWantsPlayback = false;
-
-    ImageLoader imageLoader;
+    ImageLoader imageLoader = MyApp.getInstance().getImageLoader();
     public void pause() {
         exoPlayer.pause();
     }
@@ -61,6 +60,16 @@ public class RadioServices extends Service implements Player.Listener {
          } else {
              exoPlayer.play();
          }
+    }
+
+    public void killFMService() {
+        if (exoPlayer != null) {
+            exoPlayer.release();
+        }
+        if (wifiLock != null && wifiLock.isHeld()) {
+            wifiLock.release();
+        }
+        mediaSession.release();
     }
 
     /* ===================== BINDER ===================== */
@@ -98,7 +107,6 @@ public class RadioServices extends Service implements Player.Listener {
         }  catch (ForegroundServiceStartNotAllowedException e) {
             e.printStackTrace();
         }
-        imageLoader = MyApp.getInstance().getImageLoader();
     }
 
     @Override

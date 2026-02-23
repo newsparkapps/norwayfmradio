@@ -22,110 +22,23 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 
 public class Utils {
     private static final String TAG = "Utils";
-    private static FirebaseAnalytics mFirebaseAnalytics;
-
     public static void setFMAnalytics(String message, Context context) {
-
         String specialchar = "_";
         String converted = message.replace(" ", specialchar);
         int converted_length = converted.length();
         if (converted_length > 15) {
             converted = converted.substring(0, 15);
         }
-
-        mFirebaseAnalytics = FirebaseAnalytics.getInstance(context);
-        // Log a custom event
+        FirebaseAnalytics mFirebaseAnalytics = FirebaseAnalytics.getInstance(context);
         Bundle params = new Bundle();
-        params.putString("BollywoodFM_", message);
-        mFirebaseAnalytics.logEvent("BollywoodFM_" + converted, params);
-    }
-
-    public static void setFMButtonAnalytics(String message, Context context) {
-        mFirebaseAnalytics = FirebaseAnalytics.getInstance(context);
-        // Log a custom event
-        Bundle params = new Bundle();
-        params.putString("BollywoodFM_viewall_", message);
-        mFirebaseAnalytics.logEvent("BollywoodFM_viewall_" + message, params);
-    }
-
-    public static void setErrorAnalytics(String message, Context context) {
-        mFirebaseAnalytics = FirebaseAnalytics.getInstance(context);
-        // Log a custom event
-        Bundle params = new Bundle();
-        params.putString("BollywoodFM_error_", message);
-        mFirebaseAnalytics.logEvent("BollywoodFM_error_" + message, params);
-    }
-
-
-
-    public static void setErrorLog(String message,String tag) {
-        Log.i(tag,message);
-    }
-
-    public static void setFMLog(String message,String tag) {
-        Log.i(tag,message);
-    }
-
-    public int convertPixelsToDp(int px, Context context) {
-        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
-        return Math.round(px / (displayMetrics.densityDpi / 160f));
+        params.putString("TeluguFM_", message);
+        mFirebaseAnalytics.logEvent("TeluguFM_" + converted, params);
     }
 
     public static boolean isTablet(Context context) {
         return (context.getResources().getConfiguration().screenLayout
                 & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_LARGE;
     }
-
-
-    public static void setScreenAnalytics(String message, Context context) {
-        mFirebaseAnalytics = FirebaseAnalytics.getInstance(context);
-        // Log a custom event
-        Bundle params = new Bundle();
-        params.putString("BollywoodFM_screen_", message);
-        mFirebaseAnalytics.logEvent("BollywoodFM_screen_" + message, params);
-    }
-
-    public static void setPlayerAnalytics(String message, Context context) {
-
-        String specialchar = "_";
-        String converted = message.replace(" ", specialchar);
-        int converted_length = converted.length();
-        if (converted_length > 15) {
-            converted = converted.substring(0, 15);
-        }
-        mFirebaseAnalytics = FirebaseAnalytics.getInstance(context);
-        // Log a custom event
-        Bundle params = new Bundle();
-        params.putString("BollywoodFM_P", message);
-        mFirebaseAnalytics.logEvent("BollywoodFM_P" + converted, params);
-    }
-
-    public static void startActivity(Activity sourceActivity, Class<?> destinationActivity) {
-        Log.i("Utils", "startActivity " + " " + sourceActivity + " " + destinationActivity);
-        try {
-            Intent intent = new Intent(sourceActivity, destinationActivity);
-            sourceActivity.startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            Log.d("Utils", "Utils startActivity ActivityNotFoundException"+e);
-
-        }
-    }
-
-    public static void setFavoritesAnalytics(String message, Context context) {
-
-        String specialchar = "_";
-        String converted = message.replace(" ", specialchar);
-        int converted_length = converted.length();
-        if (converted_length > 15) {
-            converted = converted.substring(0, 15);
-        }
-        mFirebaseAnalytics = FirebaseAnalytics.getInstance(context);
-        // Log a custom event
-        Bundle params = new Bundle();
-        params.putString("Bollywood_Fav_", message);
-        mFirebaseAnalytics.logEvent("Bollywood_Fav_" + converted, params);
-    }
-
 
     public static void enableEdgeToEdge(Activity activity, View rootView) {
         try {
@@ -161,6 +74,24 @@ public class Utils {
             });
         } catch (Exception e) {
             Log.e(TAG, "enableEdgeToEdge Exception "+e);
+        }
+    }
+
+    public static int calculateNoOfColumns(int itemWidthDp, Context context) {
+        DisplayMetrics dm = context.getResources().getDisplayMetrics();
+        float screenWidthDp = dm.widthPixels / dm.density;
+        return Math.max(2, (int) (screenWidthDp / itemWidthDp));
+    }
+
+
+    public static void startActivity(Activity sourceActivity, Class<?> destinationActivity) {
+        Log.i(TAG, "startActivity " + " " + sourceActivity + " " + destinationActivity);
+        try {
+            Intent intent = new Intent(sourceActivity, destinationActivity);
+            sourceActivity.startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            Log.d(TAG, "Utils startActivity ActivityNotFoundException"+e);
+
         }
     }
 }

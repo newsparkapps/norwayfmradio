@@ -1,8 +1,6 @@
 package com.newsparkapps.norwayfmradio;
 
 
-import static com.newsparkapps.norwayfmradio.FmConstants.OPEN_AD_ID;
-
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
@@ -27,6 +25,7 @@ import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.appopen.AppOpenAd;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.newsparkapps.norwayfmradio.ads.AdmobUtils;
 
 import java.lang.ref.WeakReference;
 
@@ -144,10 +143,14 @@ public class MyApp extends Application implements Application.ActivityLifecycleC
 
         /** Load and immediately show once loaded */
         private void loadAdAndThenShow(Activity activity) {
+            String adUnit = AdmobUtils.getOpenAdUnitId(
+                    AdmobUtils.getUserCountry(application.getApplicationContext())
+            );
+            Log.d(TAG, "Loading AppOpenAd: " + adUnit);
             AdRequest request = new AdRequest.Builder().build();
             AppOpenAd.load(
                     application.getApplicationContext(),
-                    OPEN_AD_ID,
+                    adUnit,
                     request,
                     new AppOpenAd.AppOpenAdLoadCallback() {
                         @Override
@@ -196,10 +199,13 @@ public class MyApp extends Application implements Application.ActivityLifecycleC
 
         /** Load silently for next foreground event */
         private void loadAdInBackground() {
+            String adUnit = AdmobUtils.getOpenAdUnitId(
+                    AdmobUtils.getUserCountry(application.getApplicationContext())
+            );
             AdRequest request = new AdRequest.Builder().build();
             AppOpenAd.load(
                     application.getApplicationContext(),
-                    OPEN_AD_ID,
+                    adUnit,
                     request,
                     new AppOpenAd.AppOpenAdLoadCallback() {
                         @Override
