@@ -11,16 +11,25 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.ump.ConsentInformation;
+import com.google.android.ump.ConsentRequestParameters;
+import com.google.android.ump.UserMessagingPlatform;
 import com.newsparkapps.norwayfmradio.R;
 import com.newsparkapps.norwayfmradio.Utils;
 import com.newsparkapps.norwayfmradio.ads.AdmobUtils;
 import com.newsparkapps.norwayfmradio.fragments.HomeFragment;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Home extends AppCompatActivity {
     private Toolbar toolbar;
     private FrameLayout adContainer;
     private AdView bannerAdView;
     private boolean bannerLoaded = false;
+
+    private ConsentInformation consentInformation;
+    private final AtomicBoolean isMobileAdsInitializeCalled = new AtomicBoolean(false);
     private static final String PREFS_NAME = "theme_prefs";
     private static final String KEY_IS_NIGHT_MODE = "is_night_mode";
 
@@ -38,6 +47,8 @@ public class Home extends AppCompatActivity {
 
         adContainer = findViewById(R.id.ad_view_container);
 
+
+        checkConsentRequest();
         if (savedInstanceState == null) {
             loadFragment(new HomeFragment(), false);
             loadBannerOnce();
@@ -102,5 +113,42 @@ public class Home extends AppCompatActivity {
         if (isFinishing() && bannerAdView != null) {
             bannerAdView.destroy();
         }
+    }
+
+    private void checkConsentRequest() {
+        try {
+            ConsentRequestParameters params = new ConsentRequestParameters.Builder().build();
+
+            consentInformation = UserMessagingPlatform.getConsentInformation(this);
+            consentInformation.requestConsentInfoUpdate(this, params,
+                    () -> UserMessagingPlatform.loadAndShowConsentFormIfRequired(this, loadAndShowError -> {
+                        if (loadAndShowError != null) {
+                            Log.w("AS_Consent", String.format("Load Error %s: %s",
+                                    loadAndShowError.getErrorCode(),
+                                    loadAndShowError.getMessage()));
+                            return;
+                        }
+                        // Check if ads can be requested
+                        if (consentInformation != null && consentInformation.canRequestAds()) {
+                            initializeMobileAdsSdk();
+                        }
+                    }),
+                    requestConsentError -> Log.w("AS_Consent", String.format("Request Error %s: %s",
+                            requestConsentError.getErrorCode(),
+                            requestConsentError.getMessage()))
+            );
+
+        } catch (NullPointerException e) {
+            Log.e("TAG","ConsentInformation null",e);
+        } catch (OutOfMemoryError e) {
+            Log.e("TAG","ConsentInformation OOM",e);
+        }
+    }
+
+    private void initializeMobileAdsSdk() {
+        if (isMobileAdsInitializeCalled.getAndSet(true)) {
+            return;
+        }
+        MobileAds.initialize(this);
     }
 }
