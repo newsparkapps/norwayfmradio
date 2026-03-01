@@ -1,5 +1,7 @@
 package com.newsparkapps.norwayfmradio.activities;
 
+import static com.newsparkapps.norwayfmradio.FmConstants.BANNER_AD_CODE;
+
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -15,9 +17,9 @@ import com.google.android.gms.ads.MobileAds;
 import com.google.android.ump.ConsentInformation;
 import com.google.android.ump.ConsentRequestParameters;
 import com.google.android.ump.UserMessagingPlatform;
+import com.newsparkapps.norwayfmradio.ads.AdmobUtils;
 import com.newsparkapps.norwayfmradio.R;
 import com.newsparkapps.norwayfmradio.Utils;
-import com.newsparkapps.norwayfmradio.ads.AdmobUtils;
 import com.newsparkapps.norwayfmradio.fragments.HomeFragment;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,8 +32,6 @@ public class Home extends AppCompatActivity {
 
     private ConsentInformation consentInformation;
     private final AtomicBoolean isMobileAdsInitializeCalled = new AtomicBoolean(false);
-    private static final String PREFS_NAME = "theme_prefs";
-    private static final String KEY_IS_NIGHT_MODE = "is_night_mode";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,8 +47,8 @@ public class Home extends AppCompatActivity {
 
         adContainer = findViewById(R.id.ad_view_container);
 
-
         checkConsentRequest();
+
         if (savedInstanceState == null) {
             loadFragment(new HomeFragment(), false);
             loadBannerOnce();
@@ -57,12 +57,13 @@ public class Home extends AppCompatActivity {
 
     private void loadBannerOnce() {
         if (bannerLoaded) return;
-        bannerAdView = AdmobUtils.createAdaptiveBanner(
+        String tierAdUnit = AdmobUtils.getBannerAdUnitId(
+                AdmobUtils.getUserCountry(this));
+        AdmobUtils.createAdaptiveBanner(
                 this,
                 adContainer,
-                AdmobUtils.getBannerAdUnitId(
-                        AdmobUtils.getUserCountry(this)
-                )
+                tierAdUnit,
+                BANNER_AD_CODE   // normal fallback
         );
         bannerLoaded = true;
     }
@@ -96,15 +97,13 @@ public class Home extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.i("Home","onResume");
         if (bannerAdView != null) bannerAdView.resume();
     }
 
     @Override
     protected void onPause() {
-        super.onPause();
-        Log.i("Home","onPause");
         if (bannerAdView != null) bannerAdView.pause();
+        super.onPause();
     }
 
     @Override
@@ -114,6 +113,7 @@ public class Home extends AppCompatActivity {
             bannerAdView.destroy();
         }
     }
+
 
     private void checkConsentRequest() {
         try {

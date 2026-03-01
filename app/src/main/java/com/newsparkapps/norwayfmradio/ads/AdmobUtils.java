@@ -1,8 +1,7 @@
 package com.newsparkapps.norwayfmradio.ads;
 
-import static android.content.Context.MODE_PRIVATE;
 import static com.newsparkapps.norwayfmradio.FmConstants.BANNER_AD_CODE;
-import static com.newsparkapps.norwayfmradio.FmConstants.INTERSTITIAL_CODE;
+import static com.newsparkapps.norwayfmradio.FmConstants.INTERSTITIAL_AD_CODE;
 import static com.newsparkapps.norwayfmradio.FmConstants.OPEN_AD_CODE;
 
 import android.app.Activity;
@@ -33,50 +32,65 @@ import java.util.Locale;
 import java.util.Set;
 
 public class AdmobUtils {
-    private static int retryCount = 0;
-    private static final int MAX_RETRY = 3;
+
     private static final String TAG = "AdmobUtils";
+
+    // ==============================
+    // 🔹 Interstitial
+    // ==============================
+
     public static InterstitialAd interstitialAd;
-    static SharedPreferences sharedPreferences;
+    private static int interstitialRetry = 0;
+    private static final int MAX_INTERSTITIAL_RETRY = 3;
+
+    // ==============================
+    // 🔹 Country Tiers
+    // ==============================
+
     private static final Set<String> TIER1_COUNTRIES = new HashSet<>(Arrays.asList(
             "US","CA","GB","DE","FR","AU","NZ","CH","SE","NO","DK","FI","NL","AT","IE","BE","SG","JP","KR"
     ));
+
     private static final Set<String> TIER2_COUNTRIES = new HashSet<>(Arrays.asList(
             "IT","ES","PT","PL","CZ","GR","HU","IL","TR","BR","MX","CL","AR","ZA","AE","SA","MY","TH","VN"
     ));
+
     private static final Set<String> TIER3_COUNTRIES = new HashSet<>(Arrays.asList(
             "IN","PK","BD","NP","LK","ID","PH","NG","KE","EG","ET","TZ","MA","UA","RU","PE","CO"
     ));
 
+    // =====================================================
+    // 🔹 Banner – Tier Based + Retry Once With Fallback
+    // =====================================================
+
     public static AdView createAdaptiveBanner(
             Activity activity,
             FrameLayout container,
-            String adUnitId
+            String tierAdUnitId,
+            String normalAdUnitId
     ) {
-        return createAdaptiveBanner(activity, container, adUnitId, false);
-    }
 
-    private static AdView createAdaptiveBanner(
-            Activity activity,
-            FrameLayout container,
-            String adUnitId,
-            boolean hasRetried
-    ) {
-        Log.d(TAG, "createAdaptiveBanner adUnitId=" + adUnitId +
-                " hasRetried=" + hasRetried);
+        if (activity == null || activity.isFinishing()) {
+            return null;
+        }
 
         container.removeAllViews();
 
         AdView adView = new AdView(activity);
-        adView.setAdUnitId(adUnitId);
         adView.setAdSize(getAdaptiveSize(activity));
+        adView.setAdUnitId(tierAdUnitId);
+        Log.d(TAG, "Banner adunit "+tierAdUnitId);
+
         container.addView(adView);
+
+        final boolean[] hasRetried = {false};
 
         adView.setAdListener(new AdListener() {
 
             @Override
             public void onAdLoaded() {
                 Log.d(TAG, "Banner loaded");
+                hasRetried[0] = false;
             }
 
             @Override
@@ -84,24 +98,28 @@ public class AdmobUtils {
 
                 Log.e(TAG, "Banner failed: " + error.getCode());
 
-                // ✅ Only retry once
-                if (hasRetried) {
-                    Log.d(TAG, "Retry already attempted. Stopping.");
+                if (activity.isFinishing() || activity.isDestroyed()) {
                     return;
                 }
 
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    if (!activity.isFinishing()) {
-                        Log.d(TAG, "Retrying banner load...");
+                // Retry only once with NORMAL ad unit
+                if (!hasRetried[0]) {
+                    hasRetried[0] = true;
+                    Log.d(TAG, "Retrying once with fallback banner...");
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        if (!activity.isFinishing() && !activity.isDestroyed()) {
+                            container.removeAllViews();
+                            AdView fallbackAdView = new AdView(activity);
+                            fallbackAdView.setAdSize(getAdaptiveSize(activity));
+                            fallbackAdView.setAdUnitId(normalAdUnitId);
+                            container.addView(fallbackAdView);
+                            fallbackAdView.loadAd(new AdRequest.Builder().build());
+                        }
+                    }, 1500);
 
-                        createAdaptiveBanner(
-                                activity,
-                                container,
-                                BANNER_AD_CODE,
-                                true   // mark retry used
-                        );
-                    }
-                }, 2000);
+                } else {
+                    Log.d(TAG, "Already retried once. No more retries.");
+                }
             }
 
             @Override
@@ -116,9 +134,8 @@ public class AdmobUtils {
     }
 
     private static AdSize getAdaptiveSize(Activity activity) {
-        DisplayMetrics metrics = new DisplayMetrics();
-        activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
 
+        DisplayMetrics metrics = activity.getResources().getDisplayMetrics();
         int adWidth = (int) (metrics.widthPixels / metrics.density);
 
         return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
@@ -127,53 +144,58 @@ public class AdmobUtils {
         );
     }
 
-    private static AdSize getAdaptiveAdSize(
-            Activity activity,
-            FrameLayout adContainer,
-            String type
-    ) {
-        if ("banner".equalsIgnoreCase(type)) {
-
-            int adWidthPixels = adContainer.getWidth();
-
-            if (adWidthPixels == 0) {
-                DisplayMetrics metrics = new DisplayMetrics();
-                activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
-                adWidthPixels = metrics.widthPixels;
-            }
-
-            float density = activity.getResources().getDisplayMetrics().density;
-            int adWidth = (int) (adWidthPixels / density);
-
-            return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
-                    activity,
-                    adWidth
-            );
-        }
-
-        // Square / MREC
-        return AdSize.MEDIUM_RECTANGLE;
-    }
+    // =====================================================
+    // 🔹 Interstitial – Limited Retry
+    // =====================================================
 
     public static void loadInterstitialAd(Context context, String adUnit) {
-        Log.d("AdmobUtils", "loadInterstitialAd "+adUnit);
+
         AdRequest adRequest = new AdRequest.Builder().build();
 
         InterstitialAd.load(context, adUnit, adRequest,
                 new InterstitialAdLoadCallback() {
+
                     @Override
                     public void onAdLoaded(@NonNull InterstitialAd ad) {
-                        Log.d("AdmobUtils", "loadInterstitialAd onAdLoaded");
+
+                        Log.d(TAG, "Interstitial loaded");
+
                         interstitialAd = ad;
+                        interstitialRetry = 0;
+
+                        interstitialAd.setFullScreenContentCallback(
+                                new FullScreenContentCallback() {
+
+                                    @Override
+                                    public void onAdDismissedFullScreenContent() {
+                                        interstitialAd = null;
+                                        loadInterstitialAd(context, adUnit);
+                                    }
+
+                                    @Override
+                                    public void onAdFailedToShowFullScreenContent(
+                                            @NonNull AdError adError) {
+                                        interstitialAd = null;
+                                    }
+                                });
                     }
+
                     @Override
                     public void onAdFailedToLoad(@NonNull LoadAdError adError) {
-                        Log.e("AdmobUtils", "loadInterstitialAd failed to load: " + adError.getMessage());
-                        interstitialAd = null;
-                        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                            loadInterstitialAd(context, INTERSTITIAL_CODE);
-                        }, 2000);
 
+                        Log.e(TAG, "Interstitial failed: " + adError.getMessage());
+                        interstitialAd = null;
+
+                        if (interstitialRetry < MAX_INTERSTITIAL_RETRY) {
+
+                            interstitialRetry++;
+
+                            new Handler(Looper.getMainLooper()).postDelayed(() ->
+                                    loadInterstitialAd(context, adUnit), 2000);
+
+                        } else {
+                            interstitialRetry = 0;
+                        }
                     }
                 });
     }
@@ -181,6 +203,49 @@ public class AdmobUtils {
     public static boolean isInterstitialAdLoaded() {
         return interstitialAd != null;
     }
+
+    // =====================================================
+    // 🔹 Country Detection (Safe)
+    // =====================================================
+
+    public static String getUserCountry(Context context) {
+
+        String countryCode = null;
+
+        try {
+            TelephonyManager tm =
+                    (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+
+            if (tm != null) {
+
+                // 1️⃣ SIM Country (most stable)
+                countryCode = tm.getSimCountryIso();
+
+                // 2️⃣ Network Country (if SIM empty)
+                if (countryCode == null || countryCode.isEmpty()) {
+                    countryCode = tm.getNetworkCountryIso();
+                }
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        // 3️⃣ Locale fallback
+        if (countryCode == null || countryCode.isEmpty()) {
+            countryCode = Locale.getDefault().getCountry();
+        }
+
+        // 4️⃣ Final safety fallback
+        if (countryCode == null || countryCode.isEmpty()) {
+            countryCode = "US";  // safe default
+        }
+
+        return countryCode.toUpperCase(Locale.ROOT);
+    }
+
+    // =====================================================
+    // 🔹 Tier-Based Ad Unit Selection
+    // =====================================================
 
     public static void showInterstitialAd(final Activity activity) {
         if (interstitialAd != null) {
@@ -204,80 +269,31 @@ public class AdmobUtils {
         }
     }
 
-    public static String getUserCountry(Context context) {
-        try {
-            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-            String country = tm.getNetworkCountryIso();
-            if (country != null && !country.isEmpty()) {
-                return country.toUpperCase(Locale.ROOT);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return Locale.getDefault().getCountry();
-    }
-
     public static String getBannerAdUnitId(String countryCode) {
-        if (countryCode == null) return BANNER_AD_CODE; // fallback
-        countryCode = countryCode.toUpperCase(Locale.ROOT);
-
-        if (TIER1_COUNTRIES.contains(countryCode)) {
-            return BANNER_AD_CODE;
-        } else if (TIER2_COUNTRIES.contains(countryCode)) {
-            return BANNER_AD_CODE;
-        } else if (TIER3_COUNTRIES.contains(countryCode)) {
-            return BANNER_AD_CODE;
-        } else {
-            return BANNER_AD_CODE;
-        }
-    }
-
-    public static String getOpenAdUnitId(String countryCode) {
-        if (countryCode == null) return OPEN_AD_CODE; // fallback
-        countryCode = countryCode.toUpperCase(Locale.ROOT);
-
-        if (TIER1_COUNTRIES.contains(countryCode)) {
-            return OPEN_AD_CODE;
-        } else if (TIER2_COUNTRIES.contains(countryCode)) {
-            return OPEN_AD_CODE;
-        } else if (TIER3_COUNTRIES.contains(countryCode)) {
-            return OPEN_AD_CODE;
-        } else {
-            return OPEN_AD_CODE;
-        }
+        return BANNER_AD_CODE;
     }
 
     public static String getInterstitialAdUnitId(String countryCode) {
-        if (countryCode == null) return INTERSTITIAL_CODE; // fallback
-        countryCode = countryCode.toUpperCase(Locale.ROOT);
-
-        if (TIER1_COUNTRIES.contains(countryCode)) {
-            return INTERSTITIAL_CODE;
-        } else if (TIER2_COUNTRIES.contains(countryCode)) {
-            return INTERSTITIAL_CODE;
-        } else if (TIER3_COUNTRIES.contains(countryCode)) {
-            return INTERSTITIAL_CODE;
-        } else {
-            return INTERSTITIAL_CODE;
-        }
+        return INTERSTITIAL_AD_CODE;
     }
 
+    public static String getOpenAdUnitId(String countryCode) {
+        return OPEN_AD_CODE;
+    }
+
+    // =====================================================
+    // 🔹 Simple Ad Toggle (SharedPref)
+    // =====================================================
 
     public static String getAdOnStatus(Context context) {
-        sharedPreferences = context.getSharedPreferences("FM_RADIO_ONLINE", MODE_PRIVATE);
-        String adstatus = "zero";
-        adstatus = sharedPreferences.getString("adStatus", "zero");
-        return adstatus;
+        SharedPreferences prefs =
+                context.getSharedPreferences("FM_RADIO_ONLINE", Context.MODE_PRIVATE);
+        return prefs.getString("adStatus", "zero");
     }
 
-    public static void setAdOnStatus(Context context,String value) {
-        SharedPreferences.Editor editor;
-        sharedPreferences = context.getSharedPreferences("FM_RADIO_ONLINE", MODE_PRIVATE);
-        sharedPreferences = context.getSharedPreferences("FM_RADIO_ONLINE", MODE_PRIVATE);
-        editor = sharedPreferences.edit();
-        editor.putString("adStatus", value);
-        editor.apply();
+    public static void setAdOnStatus(Context context, String value) {
+        SharedPreferences prefs =
+                context.getSharedPreferences("FM_RADIO_ONLINE", Context.MODE_PRIVATE);
+        prefs.edit().putString("adStatus", value).apply();
     }
 }
-
-
