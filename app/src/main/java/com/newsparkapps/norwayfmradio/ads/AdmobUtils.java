@@ -41,7 +41,7 @@ public class AdmobUtils {
 
     public static InterstitialAd interstitialAd;
     private static int interstitialRetry = 0;
-    private static final int MAX_INTERSTITIAL_RETRY = 3;
+    private static final int MAX_INTERSTITIAL_RETRY = 2;
 
     // ==============================
     // 🔹 Country Tiers
@@ -191,7 +191,7 @@ public class AdmobUtils {
                             interstitialRetry++;
 
                             new Handler(Looper.getMainLooper()).postDelayed(() ->
-                                    loadInterstitialAd(context, adUnit), 2000);
+                                    loadInterstitialAd(context, INTERSTITIAL_AD_CODE), 2000);
 
                         } else {
                             interstitialRetry = 0;

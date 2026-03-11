@@ -1,9 +1,13 @@
 package com.newsparkapps.norwayfmradio;
 
+import static com.newsparkapps.norwayfmradio.FmConstants.OPEN_AD_CODE;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -28,27 +32,37 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.newsparkapps.norwayfmradio.ads.AdmobUtils;
 
 import java.lang.ref.WeakReference;
+import java.util.Date;
 
 public class MyApp extends Application implements Application.ActivityLifecycleCallbacks, LifecycleObserver {
     private static final String TAG = "MyApp";
+    private static MyApp instance;
+    private AppOpenAdManager appOpenAdManager;
     private RequestQueue requestQueue;
     private ImageLoader mImageLoader;
-    private static MyApp mInstance;
-    private WeakReference<Activity> currentActivityRef;
-    private AppOpenAdManager appOpenAdManager;
-    public static synchronized MyApp getInstance() {
-        return mInstance;
+
+    boolean openAdLOaded = false;
+    private WeakReference<Activity> currentActivityRef;  // WeakReference prevents memory leaks
+
+    public static MyApp getInstance() {
+        return instance;
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        mInstance = this;
+        instance = this;
 
         FirebaseApp.initializeApp(this);
         registerActivityLifecycleCallbacks(this);
 
-        MobileAds.initialize(this, initializationStatus -> {});
+
+        new Handler(Looper.getMainLooper()).post(() -> {
+            MobileAds.initialize(this, initializationStatus -> {
+                Log.d("AdMob", "AdMob SDK initialization complete.");
+            });
+        });
+
         ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
 
         appOpenAdManager = new AppOpenAdManager(this);
@@ -60,14 +74,14 @@ public class MyApp extends Application implements Application.ActivityLifecycleC
         }
     }
 
+
     public RequestQueue getRequestQueue() {
         if (requestQueue == null)
             requestQueue = Volley.newRequestQueue(getApplicationContext());
         return requestQueue;
     }
-
     public ImageLoader getImageLoader() {
-        getRequestQueue();
+        getRequestQueue().getCache().clear();
         if (mImageLoader == null) {
             mImageLoader = new ImageLoader(this.requestQueue,
                     new LruBitmapCache());
@@ -75,13 +89,14 @@ public class MyApp extends Application implements Application.ActivityLifecycleC
         return this.mImageLoader;
     }
 
-    /** Foreground event */
+    /**
+     * Called when the app moves to foreground.
+     */
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     public void onMoveToForeground() {
         Activity activity = currentActivityRef != null ? currentActivityRef.get() : null;
-
         if (activity != null) {
-            appOpenAdManager.showOrLoad(activity);  // Optimized logic
+            appOpenAdManager.showAdIfAvailable(activity);
         }
     }
 
@@ -91,7 +106,7 @@ public class MyApp extends Application implements Application.ActivityLifecycleC
     @Override
     public void onActivityStarted(@NonNull Activity activity) {
         if (!appOpenAdManager.isShowingAd()) {
-            currentActivityRef = new WeakReference<>(activity);
+            currentActivityRef = new WeakReference<>(activity); // Use WeakReference to avoid leaks
         }
     }
 
@@ -110,116 +125,107 @@ public class MyApp extends Application implements Application.ActivityLifecycleC
     @Override
     public void onActivityDestroyed(@NonNull Activity activity) {
         if (currentActivityRef != null && currentActivityRef.get() == activity) {
-            currentActivityRef.clear();
+            currentActivityRef.clear();  // Clear reference when activity is destroyed
         }
     }
 
     /**
-     * Optimized App Open Ad Manager
-     * — Loads only when needed
-     * — Shows immediately on load
-     * — Reloads after dismissal
+     * App Open Ad Manager (Handles loading and displaying of App Open Ads)
      */
     private static class AppOpenAdManager {
         private final Application application;
         private AppOpenAd appOpenAd;
+        private long loadTime = 0;
         private boolean isShowingAd = false;
-        AppOpenAdManager(Application application) {
+        private boolean openAdLoadFailed = false;
+
+        public AppOpenAdManager(Application application) {
             this.application = application;
+            loadAd(application.getApplicationContext());
         }
+
+        /**
+         * Loads an App Open Ad if one is not already available.
+         */
+        public void loadAd(Context context) {
+            if (isAdAvailable()) {
+                return;
+            }
+            String adUbit ="";
+
+            if(!openAdLoadFailed) {
+                adUbit =  AdmobUtils.getOpenAdUnitId(AdmobUtils.getUserCountry(context));
+            } else {
+                adUbit = OPEN_AD_CODE;
+            }
+
+
+            Log.d(TAG, "adUbit  "+adUbit);
+
+            AdRequest adRequest = new AdRequest.Builder().build();
+            AppOpenAd.load(context, adUbit, adRequest,
+                    new AppOpenAd.AppOpenAdLoadCallback() {
+                        @Override
+                        public void onAdLoaded(AppOpenAd ad) {
+                            appOpenAd = ad;
+                            openAdLoadFailed = false;
+                            loadTime = new Date().getTime();
+                            Log.d(TAG, "App Open Ad Loaded openAdLOadFailed "+openAdLoadFailed);
+                        }
+
+                        @Override
+                        public void onAdFailedToLoad(LoadAdError error) {
+                            Log.e(TAG, "Failed to load App Open Ad: " + error.getMessage());
+                            openAdLoadFailed = true;
+                            loadAd(context);
+                        }
+                    });
+        }
+
+        /**
+         * Returns true if an ad is available and valid.
+         */
+        private boolean isAdAvailable() {
+            return appOpenAd != null && (new Date().getTime() - loadTime < 3600000); // Valid for 1 hour
+        }
+
+        /**
+         * Returns true if an ad is currently being displayed.
+         */
         public boolean isShowingAd() {
             return isShowingAd;
         }
 
-        /** Main optimized method: show if available else load */
-        public void showOrLoad(Activity activity) {
-            if (isShowingAd) return;
-            if (appOpenAd != null) {
-                showAdIfAvailable(activity);
+        /**
+         * Shows the ad if it's available and not already showing.
+         */
+        public void showAdIfAvailable(Activity activity) {
+            if (isShowingAd || !isAdAvailable()) {
                 return;
             }
-            loadAdAndThenShow(activity);
-        }
 
-        /** Load and immediately show once loaded */
-        private void loadAdAndThenShow(Activity activity) {
-            String adUnit = AdmobUtils.getOpenAdUnitId(
-                    AdmobUtils.getUserCountry(application.getApplicationContext())
-            );
-            Log.d(TAG, "Loading AppOpenAd: " + adUnit);
-            AdRequest request = new AdRequest.Builder().build();
-            AppOpenAd.load(
-                    application.getApplicationContext(),
-                    adUnit,
-                    request,
-                    new AppOpenAd.AppOpenAdLoadCallback() {
-                        @Override
-                        public void onAdLoaded(@NonNull AppOpenAd ad) {
-                            Log.d(TAG, "AppOpenAd Loaded");
-                            appOpenAd = ad;
-                            showAdIfAvailable(activity);
-                        }
-
-                        @Override
-                        public void onAdFailedToLoad(@NonNull LoadAdError error) {
-                            Log.e(TAG, "AppOpenAd Load Failed: " + error.getMessage());
-                        }
-                    }
-            );
-        }
-
-        /** Show Ad */
-        private void showAdIfAvailable(Activity activity) {
-            if (isShowingAd || appOpenAd == null) return;
             appOpenAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    isShowingAd = false;
+                    appOpenAd = null;
+                    loadAd(application.getApplicationContext());
+                }
+
+                @Override
+                public void onAdFailedToShowFullScreenContent(AdError adError) {
+                    isShowingAd = false;
+                    Log.e(TAG, "App Open Ad failed to show: " + adError.getMessage());
+                }
+
                 @Override
                 public void onAdShowedFullScreenContent() {
                     isShowingAd = true;
-                    Log.d(TAG, "AppOpenAd Shown");
-                }
-
-                @Override
-                public void onAdDismissedFullScreenContent() {
-                    Log.d(TAG, "AppOpenAd Dismissed");
-                    isShowingAd = false;
-                    appOpenAd = null;
-                    loadAdInBackground();
-                }
-
-                @Override
-                public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
-                    Log.e(TAG, "Failed to show AppOpenAd: " + adError.getMessage());
-                    isShowingAd = false;
-                    appOpenAd = null;
+                    Log.d(TAG, "App Open Ad Displayed");
                 }
             });
 
             appOpenAd.show(activity);
-        }
-
-        /** Load silently for next foreground event */
-        private void loadAdInBackground() {
-            String adUnit = AdmobUtils.getOpenAdUnitId(
-                    AdmobUtils.getUserCountry(application.getApplicationContext())
-            );
-            AdRequest request = new AdRequest.Builder().build();
-            AppOpenAd.load(
-                    application.getApplicationContext(),
-                    adUnit,
-                    request,
-                    new AppOpenAd.AppOpenAdLoadCallback() {
-                        @Override
-                        public void onAdLoaded(@NonNull AppOpenAd ad) {
-                            Log.d(TAG, "AppOpenAd Preloaded in Background");
-                            appOpenAd = ad;
-                        }
-
-                        @Override
-                        public void onAdFailedToLoad(@NonNull LoadAdError error) {
-                            Log.e(TAG, "Background Load Failed: " + error.getMessage());
-                        }
-                    }
-            );
         }
     }
 
@@ -227,3 +233,4 @@ public class MyApp extends Application implements Application.ActivityLifecycleC
         getRequestQueue().add(request);
     }
 }
+

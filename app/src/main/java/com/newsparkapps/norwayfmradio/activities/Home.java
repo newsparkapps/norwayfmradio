@@ -51,7 +51,6 @@ public class Home extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             loadFragment(new HomeFragment(), false);
-            loadBannerOnce();
         }
     }
 
@@ -59,7 +58,7 @@ public class Home extends AppCompatActivity {
         if (bannerLoaded) return;
         String tierAdUnit = AdmobUtils.getBannerAdUnitId(
                 AdmobUtils.getUserCountry(this));
-        AdmobUtils.createAdaptiveBanner(
+        bannerAdView = AdmobUtils.createAdaptiveBanner(
                 this,
                 adContainer,
                 tierAdUnit,
@@ -116,39 +115,41 @@ public class Home extends AppCompatActivity {
 
 
     private void checkConsentRequest() {
-        try {
-            ConsentRequestParameters params = new ConsentRequestParameters.Builder().build();
 
-            consentInformation = UserMessagingPlatform.getConsentInformation(this);
-            consentInformation.requestConsentInfoUpdate(this, params,
-                    () -> UserMessagingPlatform.loadAndShowConsentFormIfRequired(this, loadAndShowError -> {
-                        if (loadAndShowError != null) {
-                            Log.w("AS_Consent", String.format("Load Error %s: %s",
-                                    loadAndShowError.getErrorCode(),
-                                    loadAndShowError.getMessage()));
-                            return;
-                        }
-                        // Check if ads can be requested
-                        if (consentInformation != null && consentInformation.canRequestAds()) {
-                            initializeMobileAdsSdk();
-                        }
-                    }),
-                    requestConsentError -> Log.w("AS_Consent", String.format("Request Error %s: %s",
-                            requestConsentError.getErrorCode(),
-                            requestConsentError.getMessage()))
-            );
+        ConsentRequestParameters params =
+                new ConsentRequestParameters.Builder().build();
 
-        } catch (NullPointerException e) {
-            Log.e("TAG","ConsentInformation null",e);
-        } catch (OutOfMemoryError e) {
-            Log.e("TAG","ConsentInformation OOM",e);
-        }
+        consentInformation = UserMessagingPlatform.getConsentInformation(this);
+
+        consentInformation.requestConsentInfoUpdate(
+                this,
+                params,
+                () -> {
+
+                    UserMessagingPlatform.loadAndShowConsentFormIfRequired(
+                            this,
+                            formError -> {
+
+                                if (formError != null) {
+                                    Log.w("AdMob", formError.getMessage());
+                                    return;
+                                }
+
+                                if (consentInformation.canRequestAds()) {
+                                    initializeMobileAdsSdk();
+                                }
+                            });
+                },
+                requestConsentError ->
+                        Log.w("AdMob", requestConsentError.getMessage()));
     }
 
     private void initializeMobileAdsSdk() {
         if (isMobileAdsInitializeCalled.getAndSet(true)) {
             return;
         }
-        MobileAds.initialize(this);
+        MobileAds.initialize(this, initializationStatus -> {
+            loadBannerOnce();
+        });
     }
 }
