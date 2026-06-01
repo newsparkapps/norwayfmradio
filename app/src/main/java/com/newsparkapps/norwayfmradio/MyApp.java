@@ -137,6 +137,9 @@ public class MyApp extends Application implements Application.ActivityLifecycleC
         private AppOpenAd appOpenAd;
         private long loadTime = 0;
         private boolean isShowingAd = false;
+        private int loadAttempts = 0;
+        private static final int MAX_LOAD_ATTEMPTS = 2;
+
         private boolean openAdLoadFailed = false;
 
         public AppOpenAdManager(Application application) {
@@ -148,7 +151,7 @@ public class MyApp extends Application implements Application.ActivityLifecycleC
          * Loads an App Open Ad if one is not already available.
          */
         public void loadAd(Context context) {
-            if (isAdAvailable()) {
+            if (isAdAvailable() || loadAttempts >= MAX_LOAD_ATTEMPTS) {
                 return;
             }
             String adUbit ="";
@@ -169,6 +172,7 @@ public class MyApp extends Application implements Application.ActivityLifecycleC
                         public void onAdLoaded(AppOpenAd ad) {
                             appOpenAd = ad;
                             openAdLoadFailed = false;
+                            loadAttempts = 0;
                             loadTime = new Date().getTime();
                             Log.d(TAG, "App Open Ad Loaded openAdLOadFailed "+openAdLoadFailed);
                         }
@@ -176,8 +180,22 @@ public class MyApp extends Application implements Application.ActivityLifecycleC
                         @Override
                         public void onAdFailedToLoad(LoadAdError error) {
                             Log.e(TAG, "Failed to load App Open Ad: " + error.getMessage());
-                            openAdLoadFailed = true;
-                            loadAd(context);
+                            if (error.getCode() == 3) {
+                                loadAttempts++;
+                                openAdLoadFailed = true;
+
+                                Log.e(TAG, "Failed to load App Open Ad: " + error.getMessage());
+
+                                if (loadAttempts < MAX_LOAD_ATTEMPTS) {
+                                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                                        loadAd(context);
+                                    }, 3000); // 3 seconds delay
+                                } else {
+                                    Log.e(TAG, "Max ad load attempts reached");
+                                }
+                            }
+
+
                         }
                     });
         }

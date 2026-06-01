@@ -87,12 +87,6 @@ public class PlayerFragment extends BaseFragment {
         setupAudioControls();
         setupClickListeners();
 
-        if ("one".equals(AdmobUtils.getAdOnStatus(requireContext()))) {
-            AdmobUtils.loadInterstitialAd(requireContext(), AdmobUtils.getInterstitialAdUnitId(AdmobUtils.getUserCountry(requireContext())));
-            AdmobUtils.setAdOnStatus(requireContext(), "zero");
-        } else {
-            AdmobUtils.setAdOnStatus(requireContext(), "one");
-        }
 
         db = new DatabaseHandler(requireContext());
         imageLoader = MyApp.getInstance().getImageLoader();

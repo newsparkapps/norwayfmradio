@@ -150,6 +150,7 @@ public class Home extends AppCompatActivity {
         }
         MobileAds.initialize(this, initializationStatus -> {
             loadBannerOnce();
+            AdmobUtils.loadInterstitialAd(this, AdmobUtils.getInterstitialAdUnitId(AdmobUtils.getUserCountry(this)));
         });
     }
 }
